@@ -49,6 +49,17 @@ def get_cart(token, cart_id, store_id):
     return response.json()
 
 
+def get_cart_items(token, cart_id, store_id):
+    url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': store_id,
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    return response.json()
+
+
 def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
     payload = json.dumps({"data": {#"id": product_id,
@@ -71,10 +82,11 @@ def main():
     token = os.getenv('TOKEN')
 
     #print(get_client_token(client_id, client_secret, store_id))
-    print(get_all_products(token, store_id))
+    #print(get_all_products(token, store_id))
     #print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
-    #print(get_cart(token, 'test_123', store_id))
-    print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
+    print(get_cart(token, 'test_123', store_id))
+    #print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
+    print(get_cart_items(token, 'test_123', store_id))
 
 if __name__ == '__main__':
     main()
