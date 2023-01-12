@@ -74,12 +74,24 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     return response.json()
 
 
+def set_elasticpath_token(token, filename):
+    with open(filename, "w") as elasticpath_token:
+        elasticpath_token.write(token)
+    return token
+
+
+def get_elasticpath_token(filename):
+    with open(filename, "r") as elasticpath_token:
+        token = elasticpath_token.read()
+    return token
+
+
 def main():
     load_dotenv()
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    token = os.getenv('TOKEN')
+    #token = os.getenv('TOKEN')
 
     #print(get_client_token(client_id, client_secret, store_id))
     #print(get_all_products(token, store_id))
