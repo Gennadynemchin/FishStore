@@ -5,23 +5,31 @@ from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
+from elasticpath import get_all_products, get_elasticpath_token
+
 
 _database = None
 logger = logging.getLogger(__name__)
+load_dotenv()
 
 
 def start(bot, update):
-    keyboard = [[InlineKeyboardButton("Option 1", callback_data='test1'),
-                 InlineKeyboardButton("Option 2", callback_data='test2')],
-                [InlineKeyboardButton("Option 3", callback_data='test3')]]
+    store_token = get_elasticpath_token('elasticpath_token')
+    store_id = os.getenv('STORE_ID')
+    products = get_all_products(store_token, store_id)['data']
+    keyboard = []
+    for product in products:
+        product_name = product['attributes']['name']
+        product_id = product['id']
+        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(text='Hello!', reply_markup=reply_markup)
+    update.message.reply_text(text='Welcome to the Store!', reply_markup=reply_markup)
     return "BUTTON"
 
 
 def button(bot, update):
     query = update.callback_query
-    bot.edit_message_text(text=f"Selected option: {query.data}",
+    bot.edit_message_text(text=f"Selected product: {query.data}",
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id)
     return "BUTTON"
@@ -46,7 +54,7 @@ def handle_users_reply(bot, update):
     state_handler = states_functions[user_state]
     try:
         next_state = state_handler(bot, update)
-        db.set(chat_id, next_state)
+        db.set(str(chat_id), str(next_state))
     except Exception as err:
         print(err)
 
