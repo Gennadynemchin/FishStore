@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from elasticpath import get_all_products, get_elasticpath_token
+from elasticpath import get_all_products, get_elasticpath_token, get_client_token, set_elasticpath_token
 
 
 _database = None
@@ -15,16 +15,27 @@ load_dotenv()
 
 def start(bot, update):
     store_token = get_elasticpath_token('elasticpath_token')
+    client_id = os.getenv('CLIENT_ID')
+    client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    products = get_all_products(store_token, store_id)['data']
+    products = get_all_products(store_token, store_id)
+    if products.get('errors') is not None:
+        new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        set_elasticpath_token(str(new_elasticpath_token), 'elasticpath_token')
+        store_token = get_elasticpath_token('elasticpath_token')
+        products = get_all_products(store_token, store_id)
     keyboard = []
-    for product in products:
+    for product in products['data']:
         product_name = product['attributes']['name']
         product_id = product['id']
         keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=reply_markup)
     return "HANDLE_MENU"
+
+
+def handle_menu(bot, update):
+    pass
 
 
 def button(bot, update):
@@ -50,7 +61,8 @@ def handle_users_reply(bot, update):
     else:
         user_state = db.get(chat_id).decode("utf-8")
     states_functions = {'START': start,
-                        'BUTTON': button}
+                        'BUTTON': button,
+                        'HANDLE_MENU': handle_menu}
     state_handler = states_functions[user_state]
     try:
         next_state = state_handler(bot, update)

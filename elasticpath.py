@@ -92,12 +92,13 @@ def main():
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
     #token = os.getenv('TOKEN')
-    new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
-    set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
+    #new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
+    #set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
     elasticpath_token = get_elasticpath_token('elasticpath_token')
 
 
     products = get_all_products(elasticpath_token, store_id)
+    print(products.get('errors'))
     #print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     #print(get_cart(token, 'test_123', store_id))
     #print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
