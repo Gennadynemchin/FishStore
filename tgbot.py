@@ -28,22 +28,22 @@ def start(bot, update):
     for product in products['data']:
         product_name = product['attributes']['name']
         product_id = product['id']
-        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
+        sku = product['attributes']['sku']
+        keyboard.append([InlineKeyboardButton(product_name, callback_data=f'{product_id}, {sku}')])
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=reply_markup)
     return "HANDLE_MENU"
 
 
 def handle_menu(bot, update):
-    pass
-
-
-def button(bot, update):
     query = update.callback_query
+    keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     bot.edit_message_text(text=f"Selected product: {query.data}",
                           chat_id=query.message.chat_id,
-                          message_id=query.message.message_id)
-    return "BUTTON"
+                          message_id=query.message.message_id,
+                          reply_markup=reply_markup)
+    return "START"
 
 
 def handle_users_reply(bot, update):
@@ -61,7 +61,6 @@ def handle_users_reply(bot, update):
     else:
         user_state = db.get(chat_id).decode("utf-8")
     states_functions = {'START': start,
-                        'BUTTON': button,
                         'HANDLE_MENU': handle_menu}
     state_handler = states_functions[user_state]
     try:
