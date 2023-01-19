@@ -24,7 +24,7 @@ def start(bot, update):
         keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=reply_markup)
-    return "BUTTON"
+    return "HANDLE_MENU"
 
 
 def button(bot, update):
