@@ -74,6 +74,23 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     return response.json()
 
 
+def is_token_expired(filename, store_id):
+    with open(filename, "r") as elasticpath_token:
+        token = elasticpath_token.read()
+    url = 'https://useast.api.elasticpath.com/pcm/products'
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': store_id,
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url, headers=headers)
+    print(response.json())
+    if response.json().get('errors') is not None:
+        return True
+    else:
+        return False
+
+
+
 def set_elasticpath_token(token, filename):
     with open(filename, "w") as elasticpath_token:
         elasticpath_token.write(token)
@@ -91,14 +108,13 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    #token = os.getenv('TOKEN')
+    elasticpath_token = get_elasticpath_token('elasticpath_token')
     #new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
     #set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
-    elasticpath_token = get_elasticpath_token('elasticpath_token')
 
 
-    products = get_all_products(elasticpath_token, store_id)
-    print(products.get('errors'))
+    print(is_token_expired('elasticpath_token', store_id))
+    #products = get_all_products(elasticpath_token, store_id)
     #print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     #print(get_cart(token, 'test_123', store_id))
     #print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
