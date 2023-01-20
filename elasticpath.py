@@ -90,7 +90,6 @@ def is_token_expired(filename, store_id):
         return False
 
 
-
 def set_elasticpath_token(token, filename):
     with open(filename, "w") as elasticpath_token:
         elasticpath_token.write(token)
