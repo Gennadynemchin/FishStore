@@ -37,6 +37,7 @@ def get_product_keyboard(products):
 
 def start(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
+        print('Expired')
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
@@ -67,7 +68,7 @@ def second(bot, update, token_filename, store_id, client_id, client_secret):
     elasticpath_token = get_elasticpath_token(token_filename)
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
-    bot.edit_message_text(text=f"Selected product:",
+    bot.edit_message_text(text=f"Let's continue",
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           reply_markup=keyboard)
