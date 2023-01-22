@@ -1,41 +1,54 @@
 import os
 import logging
 import redis
+from enum import Enum, auto
+from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
-from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler
-from elasticpath import get_all_products, get_elasticpath_token, get_client_token, set_elasticpath_token
-
+from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler, ConversationHandler
+from elasticpath import get_all_products, \
+    get_elasticpath_token, \
+    get_client_token, \
+    set_elasticpath_token, \
+    is_token_expired
 
 _database = None
 logger = logging.getLogger(__name__)
-load_dotenv()
 
 
-def start(bot, update):
-    store_token = get_elasticpath_token('elasticpath_token')
-    client_id = os.getenv('CLIENT_ID')
-    client_secret = os.getenv('CLIENT_SECRET')
-    store_id = os.getenv('STORE_ID')
-    products = get_all_products(store_token, store_id)
-    if products.get('errors') is not None:
-        new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
-        set_elasticpath_token(str(new_elasticpath_token), 'elasticpath_token')
-        store_token = get_elasticpath_token('elasticpath_token')
-        products = get_all_products(store_token, store_id)
+class State(Enum):
+    START = auto()
+    HANDLE_MENU = auto()
+    HANDLE_DESCRIPTION = auto()
+    FIRST = auto()
+    SECOND = auto()
+
+
+def get_product_keyboard(products):
     keyboard = []
     for product in products['data']:
         product_name = product['attributes']['name']
         product_id = product['id']
-        sku = product['attributes']['sku']
-        keyboard.append([InlineKeyboardButton(product_name, callback_data=f'{product_id}, {sku}')])
+        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(text='Welcome to the Store!', reply_markup=reply_markup)
-    return "HANDLE_MENU"
+    return reply_markup
 
 
-def handle_menu(bot, update):
+def start(bot, update, token_filename, store_id, client_id, client_secret):
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        print('NEW TOKEN', new_token)
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    print(elasticpath_token)
+    products = get_all_products(elasticpath_token, store_id)
+    keyboard = get_product_keyboard(products)
+    update.message.reply_text(text='Welcome to the Store!', reply_markup=keyboard)
+    return State.FIRST
+
+
+def first(bot, update):
     query = update.callback_query
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -43,31 +56,34 @@ def handle_menu(bot, update):
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           reply_markup=reply_markup)
-    return "START"
+    return State.SECOND
 
 
-def handle_users_reply(bot, update):
-    db = get_database_connection()
-    if update.message:
-        user_reply = update.message.text
-        chat_id = update.message.chat_id
-    elif update.callback_query:
-        user_reply = update.callback_query.data
-        chat_id = update.callback_query.message.chat_id
-    else:
-        return
-    if user_reply == '/start':
-        user_state = 'START'
-    else:
-        user_state = db.get(chat_id).decode("utf-8")
-    states_functions = {'START': start,
-                        'HANDLE_MENU': handle_menu}
-    state_handler = states_functions[user_state]
-    try:
-        next_state = state_handler(bot, update)
-        db.set(str(chat_id), str(next_state))
-    except Exception as err:
-        print(err)
+def second(bot, update):
+    query = update.callback_query
+    bot.edit_message_text(
+        chat_id=query.message.chat_id,
+        message_id=query.message.message_id,
+        text=u"Second CallbackQueryHandler"
+    )
+    return
+
+
+def handle_description(bot, update):
+    query = update.callback_query
+    keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    bot.edit_message_text(text=f"Selected product: {query.data}",
+                          chat_id=query.message.chat_id,
+                          message_id=query.message.message_id,
+                          reply_markup=reply_markup)
+
+
+def handle_menu(bot, update):
+    query = update.callback_query
+    bot.edit_message_text(text=f"TEST",
+                          chat_id=query.message.chat_id,
+                          message_id=query.message.message_id)
 
 
 def get_database_connection():
@@ -80,14 +96,34 @@ def get_database_connection():
     return _database
 
 
-if __name__ == '__main__':
+def main():
     logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                         level=logging.DEBUG)
     load_dotenv()
-    token = os.getenv("TG_TOKEN")
-    updater = Updater(token)
-    dispatcher = updater.dispatcher
-    dispatcher.add_handler(CallbackQueryHandler(handle_users_reply))
-    dispatcher.add_handler(MessageHandler(Filters.text, handle_users_reply))
-    dispatcher.add_handler(CommandHandler('start', handle_users_reply))
+    tg_token = os.getenv("TG_TOKEN")
+    client_id = os.getenv('CLIENT_ID')
+    client_secret = os.getenv('CLIENT_SECRET')
+    store_id = os.getenv('STORE_ID')
+    store_token = get_elasticpath_token('elasticpath_token')
+    token_filename = 'elasticpath_token'
+    products = get_all_products(store_token, store_id)
+
+    updater = Updater(tg_token)
+    dp = updater.dispatcher
+    conv_handler = ConversationHandler(
+        entry_points=[CommandHandler('start', partial(start,
+                                                      token_filename=token_filename,
+                                                      store_id=store_id,
+                                                      client_id=client_id,
+                                                      client_secret=client_secret))],
+        states={State.FIRST: [CallbackQueryHandler(first)],
+                State.SECOND: [CallbackQueryHandler(second)]},
+        fallbacks=[])
+
+    dp.add_handler(conv_handler)
     updater.start_polling()
+    updater.idle()
+
+
+if __name__ == '__main__':
+    main()
