@@ -38,10 +38,8 @@ def get_product_keyboard(products):
 def start(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
-        print('NEW TOKEN', new_token)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
-    print(elasticpath_token)
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=keyboard)
@@ -59,31 +57,19 @@ def first(bot, update):
     return State.SECOND
 
 
-def second(bot, update):
+def second(bot, update, token_filename, store_id, client_id, client_secret):
     query = update.callback_query
-    bot.edit_message_text(
-        chat_id=query.message.chat_id,
-        message_id=query.message.message_id,
-        text=u"Second CallbackQueryHandler"
-    )
-    return
-
-
-def handle_description(bot, update):
-    query = update.callback_query
-    keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    bot.edit_message_text(text=f"Selected product: {query.data}",
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    products = get_all_products(elasticpath_token, store_id)
+    keyboard = get_product_keyboard(products)
+    bot.edit_message_text(text=f"Selected product:",
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
-                          reply_markup=reply_markup)
-
-
-def handle_menu(bot, update):
-    query = update.callback_query
-    bot.edit_message_text(text=f"TEST",
-                          chat_id=query.message.chat_id,
-                          message_id=query.message.message_id)
+                          reply_markup=keyboard)
+    return State.FIRST
 
 
 def get_database_connection():
@@ -117,7 +103,12 @@ def main():
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
         states={State.FIRST: [CallbackQueryHandler(first)],
-                State.SECOND: [CallbackQueryHandler(second)]},
+                State.SECOND: [CallbackQueryHandler(partial(second,
+                                                            token_filename=token_filename,
+                                                            store_id=store_id,
+                                                            client_id=client_id,
+                                                            client_secret=client_secret
+                                                            ))]},
         fallbacks=[])
 
     dp.add_handler(conv_handler)
