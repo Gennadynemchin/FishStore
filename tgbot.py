@@ -48,6 +48,7 @@ def start(bot, update, token_filename, store_id, client_id, client_secret):
 
 def first(bot, update):
     query = update.callback_query
+    print(query)
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.edit_message_text(text=f"Selected product: {query.data}",
@@ -59,6 +60,7 @@ def first(bot, update):
 
 def second(bot, update, token_filename, store_id, client_id, client_secret):
     query = update.callback_query
+    print(query)
     if is_token_expired(token_filename, store_id):
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
