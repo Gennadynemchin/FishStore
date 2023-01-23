@@ -21,8 +21,6 @@ class State(Enum):
     START = auto()
     HANDLE_MENU = auto()
     HANDLE_DESCRIPTION = auto()
-    FIRST = auto()
-    SECOND = auto()
 
 
 def get_product_keyboard(products):
@@ -44,10 +42,10 @@ def start(bot, update, token_filename, store_id, client_id, client_secret):
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=keyboard)
-    return State.FIRST
+    return State.HANDLE_DESCRIPTION
 
 
-def first(bot, update):
+def handle_description(bot, update):
     query = update.callback_query
     print(query)
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
@@ -56,10 +54,10 @@ def first(bot, update):
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           reply_markup=reply_markup)
-    return State.SECOND
+    return State.HANDLE_MENU
 
 
-def second(bot, update, token_filename, store_id, client_id, client_secret):
+def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
     query = update.callback_query
     print(query)
     if is_token_expired(token_filename, store_id):
@@ -72,7 +70,7 @@ def second(bot, update, token_filename, store_id, client_id, client_secret):
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           reply_markup=keyboard)
-    return State.FIRST
+    return State.HANDLE_DESCRIPTION
 
 
 def get_database_connection():
@@ -105,13 +103,13 @@ def main():
                                                       store_id=store_id,
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
-        states={State.FIRST: [CallbackQueryHandler(first)],
-                State.SECOND: [CallbackQueryHandler(partial(second,
-                                                            token_filename=token_filename,
-                                                            store_id=store_id,
-                                                            client_id=client_id,
-                                                            client_secret=client_secret
-                                                            ))]},
+        states={State.HANDLE_DESCRIPTION: [CallbackQueryHandler(handle_description)],
+                State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret
+                                                                 ))]},
         fallbacks=[])
 
     dp.add_handler(conv_handler)
