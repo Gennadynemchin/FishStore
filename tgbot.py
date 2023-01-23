@@ -4,10 +4,11 @@ import redis
 from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler, ConversationHandler
 from elasticpath import get_all_products, \
+    get_product_by_id, \
     get_photo_by_productid, \
     get_elasticpath_token, \
     get_client_token, \
@@ -52,11 +53,13 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
+    product_info = get_product_by_id(elasticpath_token, product_id, store_id)
     photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     bot.send_photo(chat_id=query.message.chat_id,
+                   caption=product_info,
                    photo=photo_link,
                    reply_markup=reply_markup)
     '''

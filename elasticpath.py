@@ -74,6 +74,17 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     return response.json()
 
 
+def get_product_by_id(token, product_id, store_id):
+    url_get_fileid = f'https://useast.api.elasticpath.com/catalog/products/{product_id}'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url_get_fileid, headers=headers, data=payload)
+    return response.json()
+
+
 def get_photo_by_productid(token, product_id, store_id):
     url_get_fileid = f'https://useast.api.elasticpath.com/pcm/products/{product_id}/relationships/files'
     payload = {}
