@@ -33,7 +33,7 @@ def create_cart(token, store_id, customer_id, cart_name, cart_description):
     headers = {'accept': 'application/json',
                'content-type': 'application/json',
                'x-moltin-auth-store': store_id,
-               #'x-moltin-customer-token': customer_id,
+               # 'x-moltin-customer-token': customer_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
     return response.json()
@@ -62,16 +62,27 @@ def get_cart_items(token, cart_id, store_id):
 
 def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
-    payload = json.dumps({"data": {#"id": product_id,
-                                   "sku": '111111',
-                                   "type": "cart_item",
-                                   "quantity": quantity}})
+    payload = json.dumps({"data": {  # "id": product_id,
+        "sku": '111111',
+        "type": "cart_item",
+        "quantity": quantity}})
     headers = {'accept': 'application/json',
                'content-type': 'application/json',
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
     return response.json()
+
+
+def get_file(token, file_id, store_id):
+    url = f'https://useast.api.elasticpath.com/v2/files/{file_id}'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    print(response.text)
 
 
 def is_token_expired(filename, store_id):
@@ -83,7 +94,6 @@ def is_token_expired(filename, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    print(response.json())
     if response.json().get('errors') is not None:
         return True
     else:
@@ -107,16 +117,20 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
+    new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
+    set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
     elasticpath_token = get_elasticpath_token('elasticpath_token')
-    #new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
-    #set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
-
 
     print(is_token_expired('elasticpath_token', store_id))
-    #products = get_all_products(elasticpath_token, store_id)
-    #print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
-    #print(get_cart(token, 'test_123', store_id))
-    #print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
-    #cart_items = get_cart_items(elasticpath_token, 'test_123', store_id)
+    products = get_all_products(elasticpath_token, store_id)
+    print(products)
+    file = get_file(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
+    print(file)
+    # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
+    # print(get_cart(token, 'test_123', store_id))
+    # print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
+    # cart_items = get_cart_items(elasticpath_token, 'test_123', store_id)
+
+
 if __name__ == '__main__':
     main()
