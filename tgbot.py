@@ -8,6 +8,7 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler, ConversationHandler
 from elasticpath import get_all_products, \
+    get_photo, \
     get_elasticpath_token, \
     get_client_token, \
     set_elasticpath_token, \
@@ -35,7 +36,6 @@ def get_product_keyboard(products):
 
 def start(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
-        print('Expired')
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
@@ -45,9 +45,13 @@ def start(bot, update, token_filename, store_id, client_id, client_secret):
     return State.HANDLE_DESCRIPTION
 
 
-def handle_description(bot, update):
+def handle_description(bot, update, token_filename, store_id, client_id, client_secret):
     query = update.callback_query
-    print(query)
+    product_id = query.data
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.edit_message_text(text=f"Selected product: {query.data}",

@@ -74,7 +74,7 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     return response.json()
 
 
-def get_file(token, file_id, store_id):
+def get_photo(token, file_id, store_id):
     url = f'https://useast.api.elasticpath.com/v2/files/{file_id}'
     payload = {}
     headers = {'accept': 'application/json',
@@ -82,7 +82,8 @@ def get_file(token, file_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
-    print(response.text)
+    file_link = response.json()['data']['link']['href']
+    return file_link
 
 
 def is_token_expired(filename, store_id):
@@ -124,7 +125,7 @@ def main():
     print(is_token_expired('elasticpath_token', store_id))
     products = get_all_products(elasticpath_token, store_id)
     print(products)
-    file = get_file(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
+    file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
     print(file)
     # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     # print(get_cart(token, 'test_123', store_id))
