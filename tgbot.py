@@ -60,14 +60,6 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
                    photo=photo_link,
                    reply_markup=reply_markup)
     '''
-    bot.sendPhoto(chat_id=query.message.chat_id,
-                  photo=photo_link,
-                  message_id=query.message.message_id,
-                  text=f"Selected product: {query.data}",
-                  reply_markup=reply_markup)
-    '''
-
-    '''
     bot.edit_message_text(text=f"Selected product: {query.data}",
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
@@ -85,7 +77,8 @@ def handle_menu(bot, update, token_filename, store_id, client_id, client_secret)
     elasticpath_token = get_elasticpath_token(token_filename)
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
-    bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+    bot.delete_message(chat_id=query.message.chat_id,
+                       message_id=query.message.message_id)
     bot.send_message(text=f"Let's continue",
                      chat_id=query.message.chat_id,
                      message_id=query.message.message_id,
