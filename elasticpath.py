@@ -86,6 +86,28 @@ def get_photo(token, file_id, store_id):
     return file_link
 
 
+def get_photo_by_productid(token, product_id, store_id):
+    url_get_fileid = f'https://useast.api.elasticpath.com/pcm/products/{product_id}/relationships/files'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url_get_fileid, headers=headers, data=payload)
+    file_id = response.json()['data'][0]['id']
+
+    url_get_photo = f'https://useast.api.elasticpath.com/v2/files/{file_id}'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url_get_photo, headers=headers, data=payload)
+    file_link = response.json()['data']['link']['href']
+    return file_link
+
+
+
 def is_token_expired(filename, store_id):
     with open(filename, "r") as elasticpath_token:
         token = elasticpath_token.read()
@@ -125,7 +147,9 @@ def main():
     print(is_token_expired('elasticpath_token', store_id))
     products = get_all_products(elasticpath_token, store_id)
     print(products)
-    file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
+    #file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
+    #print(file)
+    file = get_photo_by_productid(elasticpath_token, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', store_id)
     print(file)
     # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     # print(get_cart(token, 'test_123', store_id))

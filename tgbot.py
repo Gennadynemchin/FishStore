@@ -4,11 +4,11 @@ import redis
 from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, InputMediaPhoto
 from telegram.ext import Filters, Updater
 from telegram.ext import CallbackQueryHandler, CommandHandler, MessageHandler, ConversationHandler
 from elasticpath import get_all_products, \
-    get_photo, \
+    get_photo_by_productid, \
     get_elasticpath_token, \
     get_client_token, \
     set_elasticpath_token, \
@@ -52,12 +52,27 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
+    photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
     keyboard = [[InlineKeyboardButton('Back', callback_data='Back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
+    bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+    bot.send_photo(chat_id=query.message.chat_id,
+                   photo=photo_link,
+                   reply_markup=reply_markup)
+    '''
+    bot.sendPhoto(chat_id=query.message.chat_id,
+                  photo=photo_link,
+                  message_id=query.message.message_id,
+                  text=f"Selected product: {query.data}",
+                  reply_markup=reply_markup)
+    '''
+
+    '''
     bot.edit_message_text(text=f"Selected product: {query.data}",
                           chat_id=query.message.chat_id,
                           message_id=query.message.message_id,
                           reply_markup=reply_markup)
+    '''
     return State.HANDLE_MENU
 
 
@@ -70,10 +85,11 @@ def handle_menu(bot, update, token_filename, store_id, client_id, client_secret)
     elasticpath_token = get_elasticpath_token(token_filename)
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
-    bot.edit_message_text(text=f"Let's continue",
-                          chat_id=query.message.chat_id,
-                          message_id=query.message.message_id,
-                          reply_markup=keyboard)
+    bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
+    bot.send_message(text=f"Let's continue",
+                     chat_id=query.message.chat_id,
+                     message_id=query.message.message_id,
+                     reply_markup=keyboard)
     return State.HANDLE_DESCRIPTION
 
 
@@ -107,7 +123,11 @@ def main():
                                                       store_id=store_id,
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
-        states={State.HANDLE_DESCRIPTION: [CallbackQueryHandler(handle_description)],
+        states={State.HANDLE_DESCRIPTION: [CallbackQueryHandler(partial(handle_description,
+                                                                        token_filename=token_filename,
+                                                                        store_id=store_id,
+                                                                        client_id=client_id,
+                                                                        client_secret=client_secret))],
                 State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
                                                                  token_filename=token_filename,
                                                                  store_id=store_id,
