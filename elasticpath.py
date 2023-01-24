@@ -62,10 +62,10 @@ def get_cart_items(token, cart_id, store_id):
 
 def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
-    payload = json.dumps({"data": {  # "id": product_id,
-        "sku": '111111',
-        "type": "cart_item",
-        "quantity": quantity}})
+    payload = json.dumps({"data": {'id': product_id,
+                                   # 'sku': '111111',
+                                   'type': "cart_item",
+                                   'quantity': quantity}})
     headers = {'accept': 'application/json',
                'content-type': 'application/json',
                'x-moltin-auth-store': store_id,
@@ -83,6 +83,18 @@ def get_product_by_id(token, product_id, store_id):
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url_get_fileid, headers=headers, data=payload)
     return response.json()
+
+
+def get_price_by_pricebookid(token, pricebook_id, store_id):
+    url = f'https://useast.api.elasticpath.com/pcm/pricebooks'
+    # url = f'https://useast.api.elasticpath.com/pcm/pricebooks/{pricebook_id}/prices'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    print(response.text)
 
 
 def get_photo_by_productid(token, product_id, store_id):
@@ -145,10 +157,12 @@ def main():
     print(is_token_expired('elasticpath_token', store_id))
     products = get_all_products(elasticpath_token, store_id)
     print(products)
-    #file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
-    #print(file)
+    # file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
+    # print(file)
     file = get_photo_by_productid(elasticpath_token, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', store_id)
     print(file)
+    pricebook = get_price_by_pricebookid(elasticpath_token, 'ed81b3de-44b6-4847-b9d0-f4e6ace58752', store_id)
+    print(pricebook)
     # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     # print(get_cart(token, 'test_123', store_id))
     # print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
