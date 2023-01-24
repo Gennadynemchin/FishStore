@@ -165,8 +165,9 @@ def main():
     print(pricebook)
     # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     # print(get_cart(token, 'test_123', store_id))
-    # print(add_product_to_cart(token, 'test_123', store_id, '10280a0e-c310-4a03-ad3c-600e9e3978ea', 1))
-    # cart_items = get_cart_items(elasticpath_token, 'test_123', store_id)
+    #print(add_product_to_cart(elasticpath_token, '281372637', store_id, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', 1))
+    cart_items = get_cart_items(elasticpath_token, '281372637', store_id)
+    print('CART INFO: ', cart_items)
 
 
 if __name__ == '__main__':
