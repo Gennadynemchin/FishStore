@@ -81,7 +81,6 @@ def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret)
     product_id = query.data.split(' ')[1]
     quantity = 1
     add_product_to_cart(elasticpath_token, cart_id, store_id, product_id, quantity)
-    print('ADDED 2 CART')
     return State.HANDLE_DESCRIPTION
 
 
