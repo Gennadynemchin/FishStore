@@ -93,12 +93,14 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
+    keyboard = [[InlineKeyboardButton('Back', callback_data='back')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id,
                        message_id=query.message.message_id)
     bot.send_message(text=cart_info,
                      chat_id=query.message.chat_id,
                      message_id=query.message.message_id,
-                     reply_markup=None)
+                     reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
 
 
