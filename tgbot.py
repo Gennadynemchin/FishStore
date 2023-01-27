@@ -81,6 +81,7 @@ def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret)
     product_id = query.data.split(' ')[1]
     quantity = 1
     add_product_to_cart(elasticpath_token, cart_id, store_id, product_id, quantity)
+    query.answer(text='The product has been added to cart', show_alert=True)
     return State.HANDLE_DESCRIPTION
 
 
@@ -92,7 +93,13 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
-    pass
+    bot.delete_message(chat_id=query.message.chat_id,
+                       message_id=query.message.message_id)
+    bot.send_message(text=cart_info,
+                     chat_id=query.message.chat_id,
+                     message_id=query.message.message_id,
+                     reply_markup=None)
+    return State.HANDLE_DESCRIPTION
 
 
 
@@ -149,6 +156,12 @@ def main():
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='^add_to_cart'),
+                                           CallbackQueryHandler(partial(handle_cart_info,
+                                                                        token_filename=token_filename,
+                                                                        store_id=store_id,
+                                                                        client_id=client_id,
+                                                                        client_secret=client_secret),
+                                                                pattern='cart_info'),
                                            CallbackQueryHandler(partial(handle_menu,
                                                                         token_filename=token_filename,
                                                                         store_id=store_id,
