@@ -26,6 +26,7 @@ class State(Enum):
     START = auto()
     HANDLE_MENU = auto()
     HANDLE_DESCRIPTION = auto()
+    HANDLE_CART = auto()
 
 
 def get_product_keyboard(products):
@@ -93,7 +94,7 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
-    keyboard = [[InlineKeyboardButton('Back', callback_data='back')]]
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id,
                        message_id=query.message.message_id)
