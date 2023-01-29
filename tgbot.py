@@ -17,7 +17,6 @@ from elasticpath import get_all_products, \
     add_product_to_cart, \
     get_cart_items
 
-
 _database = None
 logger = logging.getLogger(__name__)
 
@@ -59,6 +58,9 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     product_info = get_product_by_id(elasticpath_token, product_id, store_id)
+    product_name = product_info['data']['attributes']['name']
+    product_price = product_info['data']['meta']['display_price']['with_tax']['formatted']
+    product_sku = product_info['data']['attributes']['sku']
     photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
     keyboard = [[InlineKeyboardButton('Add to cart', callback_data=f'add_to_cart {product_id}')],
                 [InlineKeyboardButton('Go to cart', callback_data='cart_info')],
@@ -66,7 +68,7 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     bot.send_photo(chat_id=query.message.chat_id,
-                   caption=product_info,
+                   caption=f'{product_name}\n{product_price}\n{product_sku}',
                    photo=photo_link,
                    reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
@@ -102,8 +104,7 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                      chat_id=query.message.chat_id,
                      message_id=query.message.message_id,
                      reply_markup=reply_markup)
-    return State.HANDLE_DESCRIPTION
-
+    return State.HANDLE_CART
 
 
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
@@ -181,7 +182,13 @@ def main():
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret
-                                                                 ))]},
+                                                                 ))],
+                State.HANDLE_CART: [CallbackQueryHandler(partial(handle_menu,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret),
+                                                         pattern='menu')]},
         fallbacks=[])
 
     dp.add_handler(conv_handler)
