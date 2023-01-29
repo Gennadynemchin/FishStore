@@ -96,11 +96,19 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
+    product_in_cart_info = []
+    for product in cart_info['data']:
+        product_name = product['name']
+        product_sku = product['sku']
+        product_quantity = product['quantity']
+        product_price = product['meta']['display_price']['with_tax']['unit']['formatted']
+        product_total_price = product['meta']['display_price']['with_tax']['value']['formatted']
+        product_in_cart_info.append([product_name, product_sku, product_quantity, product_price, product_total_price])
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id,
                        message_id=query.message.message_id)
-    bot.send_message(text=cart_info,
+    bot.send_message(text=product_in_cart_info,
                      chat_id=query.message.chat_id,
                      message_id=query.message.message_id,
                      reply_markup=reply_markup)
