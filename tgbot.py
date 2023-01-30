@@ -15,7 +15,9 @@ from elasticpath import get_all_products, \
     set_elasticpath_token, \
     is_token_expired, \
     add_product_to_cart, \
-    get_cart_items
+    get_cart_items, \
+    remove_all_from_cart
+
 
 _database = None
 logger = logging.getLogger(__name__)
@@ -110,7 +112,8 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                    f'Subtotal: {product_total}\n\n')
         products_in_cart_info.append(message)
 
-    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')],
+                [InlineKeyboardButton('Remove all', callback_data='remove_all')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.delete_message(chat_id=query.message.chat_id,
                        message_id=query.message.message_id)
@@ -119,6 +122,20 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                      message_id=query.message.message_id,
                      reply_markup=reply_markup)
     return State.HANDLE_CART
+
+
+def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
+    query = update.callback_query
+    cart_id = update.effective_user.id
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    remove_all_from_cart(elasticpath_token, cart_id, store_id)
+    query.answer(text='All of the products has been removed', show_alert=True)
+    bot.delete_message(chat_id=query.message.chat_id,
+                       message_id=query.message.message_id)
+    return State.HANDLE_MENU
 
 
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
@@ -202,7 +219,19 @@ def main():
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
-                                                         pattern='menu')]},
+                                                         pattern='menu'),
+                                    CallbackQueryHandler(partial(handle_remove_all_from_cart,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret),
+                                                         pattern='remove_all'),
+                                    CallbackQueryHandler(partial(handle_cart_info,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret))
+                                    ]},
         fallbacks=[])
 
     dp.add_handler(conv_handler)

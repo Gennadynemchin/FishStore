@@ -74,6 +74,16 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     return response.json()
 
 
+def remove_all_from_cart(token, cart_id, store_id):
+    url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': f'{store_id}',
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("DELETE", url, headers=headers, data=payload)
+
+
 def get_product_by_id(token, product_id, store_id):
     url_get_fileid = f'https://useast.api.elasticpath.com/catalog/products/{product_id}'
     payload = {}
@@ -165,7 +175,7 @@ def main():
     print(pricebook)
     # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
     # print(get_cart(token, 'test_123', store_id))
-    #print(add_product_to_cart(elasticpath_token, '281372637', store_id, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', 1))
+    # print(add_product_to_cart(elasticpath_token, '281372637', store_id, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', 1))
     cart_items = get_cart_items(elasticpath_token, '281372637', store_id)
     print('CART INFO: ', cart_items)
 
