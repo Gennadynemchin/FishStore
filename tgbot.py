@@ -18,7 +18,6 @@ from elasticpath import get_all_products, \
     get_cart_items, \
     remove_all_from_cart
 
-
 _database = None
 logger = logging.getLogger(__name__)
 
@@ -48,6 +47,23 @@ def start(bot, update, token_filename, store_id, client_id, client_secret):
     products = get_all_products(elasticpath_token, store_id)
     keyboard = get_product_keyboard(products)
     update.message.reply_text(text='Welcome to the Store!', reply_markup=keyboard)
+    return State.HANDLE_DESCRIPTION
+
+
+def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
+    query = update.callback_query
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    products = get_all_products(elasticpath_token, store_id)
+    keyboard = get_product_keyboard(products)
+    bot.delete_message(chat_id=query.message.chat_id,
+                       message_id=query.message.message_id)
+    bot.send_message(text=f"Let's continue",
+                     chat_id=query.message.chat_id,
+                     message_id=query.message.message_id,
+                     reply_markup=keyboard)
     return State.HANDLE_DESCRIPTION
 
 
@@ -133,26 +149,7 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
     elasticpath_token = get_elasticpath_token(token_filename)
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
     query.answer(text='All of the products has been removed', show_alert=True)
-    bot.delete_message(chat_id=query.message.chat_id,
-                       message_id=query.message.message_id)
-    return State.HANDLE_MENU
-
-
-def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
-    query = update.callback_query
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
-    products = get_all_products(elasticpath_token, store_id)
-    keyboard = get_product_keyboard(products)
-    bot.delete_message(chat_id=query.message.chat_id,
-                       message_id=query.message.message_id)
-    bot.send_message(text=f"Let's continue",
-                     chat_id=query.message.chat_id,
-                     message_id=query.message.message_id,
-                     reply_markup=keyboard)
-    return State.HANDLE_DESCRIPTION
+    return State.HANDLE_CART
 
 
 def get_database_connection():
