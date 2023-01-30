@@ -148,7 +148,15 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
-    query.answer(text='All of the products has been removed', show_alert=True)
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    bot.delete_message(chat_id=query.message.chat_id,
+                       message_id=query.message.message_id)
+    bot.send_message(text='Now your cart is empty. Please go to "Menu"',
+                     chat_id=query.message.chat_id,
+                     message_id=query.message.message_id,
+                     reply_markup=reply_markup)
+
     return State.HANDLE_CART
 
 
