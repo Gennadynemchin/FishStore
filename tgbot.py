@@ -6,10 +6,9 @@ from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, \
                      InlineKeyboardMarkup
-from telegram.ext import Filters, Updater
+from telegram.ext import Updater
 from telegram.ext import CallbackQueryHandler, \
                          CommandHandler, \
-                         MessageHandler, \
                          ConversationHandler
 from elasticpath import get_all_products, \
     get_product_by_id, \
@@ -33,33 +32,27 @@ class State(Enum):
     HANDLE_CART = auto()
 
 
-def get_product_keyboard(products):
-    keyboard = []
-    for product in products['data']:
-        product_name = product['attributes']['name']
-        product_id = product['id']
-        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    return reply_markup
-
-
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     products = get_all_products(elasticpath_token, store_id)
-    keyboard = get_product_keyboard(products)
+    keyboard = []
+    for product in products['data']:
+        product_name = product['attributes']['name']
+        product_id = product['id']
+        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
+    reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     update.effective_message.reply_text(text=f"Let's choose:",
-                                        reply_markup=keyboard)
+                                        reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
 
 
 def handle_description(bot, update, token_filename, store_id, client_id, client_secret):
     query = update.callback_query
     product_id = query.data
-    cart_id = update.effective_user.id
     if is_token_expired(token_filename, store_id):
         new_token = get_client_token(client_id, client_secret, store_id)['access_token']
         set_elasticpath_token(new_token, token_filename)
@@ -73,7 +66,6 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
                 [InlineKeyboardButton('Go to cart', callback_data='cart_info')],
                 [InlineKeyboardButton('Back', callback_data='back')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    # bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     update.effective_message.delete()
     bot.send_photo(chat_id=query.message.chat_id,
                    caption=f'{product_name}\n{product_price}\n{product_sku}',
@@ -117,11 +109,9 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                    f'Price: {price}\n'
                    f'Subtotal: {product_total}\n\n')
         products_in_cart_info.append(message)
-
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')],
                 [InlineKeyboardButton('Remove all', callback_data='remove_all')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    # bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     update.effective_message.delete()
     bot.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
                      chat_id=query.message.chat_id,
@@ -140,7 +130,6 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    # bot.delete_message(chat_id=query.message.chat_id, message_id=query.message.message_id)
     update.effective_message.delete()
     bot.send_message(text='Now your cart is empty. Please go to "Menu"',
                      chat_id=query.message.chat_id,
