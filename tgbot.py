@@ -5,11 +5,11 @@ from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, \
-                     InlineKeyboardMarkup
+    InlineKeyboardMarkup
 from telegram.ext import Updater
 from telegram.ext import CallbackQueryHandler, \
-                         CommandHandler, \
-                         ConversationHandler
+    CommandHandler, \
+    ConversationHandler
 from elasticpath import get_all_products, \
     get_product_by_id, \
     get_photo_by_productid, \
@@ -129,13 +129,13 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
     elasticpath_token = get_elasticpath_token(token_filename)
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.answer(text='The product has been added to cart', show_alert=False)
     update.effective_message.delete()
+    reply_markup = InlineKeyboardMarkup(keyboard)
     bot.send_message(text='Now your cart is empty. Please go to "Menu"',
                      chat_id=query.message.chat_id,
                      message_id=query.message.message_id,
                      reply_markup=reply_markup)
-
     return State.HANDLE_CART
 
 
@@ -169,7 +169,20 @@ def main():
                                                       store_id=store_id,
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
-        states={State.HANDLE_DESCRIPTION: [CallbackQueryHandler(partial(add_to_cart,
+        states={State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret
+                                                                 ),
+                                                         pattern='remove_all'),
+                                    CallbackQueryHandler(partial(handle_menu,
+                                                                 token_filename=token_filename,
+                                                                 store_id=store_id,
+                                                                 client_id=client_id,
+                                                                 client_secret=client_secret
+                                                                 ))],
+                State.HANDLE_DESCRIPTION: [CallbackQueryHandler(partial(add_to_cart,
                                                                         token_filename=token_filename,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
@@ -192,12 +205,6 @@ def main():
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret))],
-                State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
-                                                                 token_filename=token_filename,
-                                                                 store_id=store_id,
-                                                                 client_id=client_id,
-                                                                 client_secret=client_secret
-                                                                 ))],
                 State.HANDLE_CART: [CallbackQueryHandler(partial(handle_menu,
                                                                  token_filename=token_filename,
                                                                  store_id=store_id,
