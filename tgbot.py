@@ -57,6 +57,7 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
     product_id = update.callback_query.data
     product_info = get_product_by_id(elasticpath_token, product_id, store_id)
     product_name = product_info['data']['attributes']['name']
+    product_description = product_info['data']['attributes']['description']
     product_price = product_info['data']['meta']['display_price']['with_tax']['formatted']
     product_sku = product_info['data']['attributes']['sku']
     photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
@@ -68,7 +69,10 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     bot.send_photo(chat_id=update.callback_query.message.chat_id,
-                   caption=f'{product_name}\n{product_price}\n{product_sku}',
+                   caption=f'{product_name}\n'
+                           f'{product_description}\n'
+                           f'{product_price}\n'
+                           f'{product_sku}',
                    photo=photo_link,
                    reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
