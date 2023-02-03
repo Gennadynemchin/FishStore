@@ -203,23 +203,5 @@ def main():
     set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
     elasticpath_token = get_elasticpath_token('elasticpath_token')
 
-    print(is_token_expired('elasticpath_token', store_id))
-    products = get_all_products(elasticpath_token, store_id)
-    print(products)
-    # file = get_photo(elasticpath_token, '575e3013-fee0-43bc-8a32-2222de0e89de', store_id)
-    # print(file)
-    file = get_photo_by_productid(elasticpath_token, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', store_id)
-    # print(create_cart(token, store_id, 'test_123', 'test_cart', 'test_description'))
-    # print(get_cart(token, 'test_123', store_id))
-    # print(add_product_to_cart(elasticpath_token, '281372637', store_id, 'fd47ec2f-07ea-4933-9401-2028b98d3e16', 1))
-    cart_items = get_cart_items(elasticpath_token, '281372637', store_id)
-    print('CART INFO: ', cart_items)
-    delete_product_from_cart(elasticpath_token, '281372637', store_id, '3dd5d1bb-1d1a-4c01-bdda-4851b638e520')
-    print(get_product_by_id(elasticpath_token, '9e58963f-1813-45e9-afdf-5b312bbf74ca', store_id))
-    print(get_product_by_id2(elasticpath_token, '9e58963f-1813-45e9-afdf-5b312bbf74ca', store_id))
-
-
 if __name__ == '__main__':
     main()
-
-'9e58963f-1813-45e9-afdf-5b312bbf74ca'
