@@ -13,6 +13,7 @@ def get_client_token(client_id, client_secret, store_id):
                'content-type': 'application/x-www-form-urlencoded',
                'x-moltin-auth-store': store_id}
     response = requests.request("POST", url, headers=headers, data=payload)
+    response.raise_for_status()
     return response.json()
 
 
@@ -23,6 +24,7 @@ def get_all_products(token, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
@@ -36,6 +38,7 @@ def create_cart(token, store_id, customer_id, cart_name, cart_description):
                # 'x-moltin-customer-token': customer_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
+    response.raise_for_status()
     return response.json()
 
 
@@ -46,6 +49,7 @@ def get_cart(token, cart_id, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
+    response.raise_for_status()
     return response.json()
 
 
@@ -57,6 +61,7 @@ def get_cart_items(token, cart_id, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
+    response.raise_for_status()
     return response.json()
 
 
@@ -71,6 +76,7 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
+    response.raise_for_status()
     return response.json()
 
 
@@ -82,6 +88,7 @@ def delete_product_from_cart(token, cart_id, store_id, product_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("DELETE", url, headers=headers, data=payload)
+    response.raise_for_status()
     print(response.text)
 
 
@@ -93,18 +100,8 @@ def remove_all_from_cart(token, cart_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("DELETE", url, headers=headers, data=payload)
-
-'''
-def get_product_by_id(token, product_id, store_id):
-    url = f'https://useast.api.elasticpath.com/catalog/products/{product_id}'
-    payload = {}
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': f'{store_id}',
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers, data=payload)
-    return response.json()
-'''
+    response.raise_for_status()
+    return response
 
 
 def get_product_info_by_id(token, product_id, store_id):
@@ -116,7 +113,9 @@ def get_product_info_by_id(token, product_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response_info = requests.request("GET", url_info, headers=headers, data=payload).json()
+    response_info.raise_for_status()
     response_description = requests.request("GET", url_description, headers=headers, data=payload).json()
+    response_info.raise_for_status()
     response = {'product_name': response_info['data']['attributes']['name'],
                 'product_price': response_info['data']['meta']['display_price']['with_tax']['formatted'],
                 'product_sku': response_info['data']['attributes']['sku'],
@@ -132,6 +131,7 @@ def get_price_by_pricebookid(token, pricebook_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
+    response.raise_for_status()
     print(response.text)
 
 
@@ -152,6 +152,7 @@ def get_photo_by_productid(token, product_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url_get_photo, headers=headers, data=payload)
+    response.raise_for_status()
     file_link = response.json()['data']['link']['href']
     return file_link
 
@@ -165,10 +166,23 @@ def is_token_expired(filename, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
+    response.raise_for_status()
     if response.json().get('errors') is not None:
         return True
     else:
         return False
+
+
+def get_single_product(token, product_id, store_id):
+    url = f'https://useast.api.elasticpath.com/v2/products/{product_id}'
+    payload = {}
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': store_id,
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("GET", url, headers=headers, data=payload)
+    response.raise_for_status()
+    print(response.text)
 
 
 def set_elasticpath_token(token, filename):
@@ -181,17 +195,6 @@ def get_elasticpath_token(filename):
     with open(filename, "r") as elasticpath_token:
         token = elasticpath_token.read()
     return token
-
-
-def get_single_product(token, product_id, store_id):
-    url = f'https://useast.api.elasticpath.com/v2/products/{product_id}'
-    payload = {}
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': store_id,
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers, data=payload)
-    print(response.text)
 
 
 def main():

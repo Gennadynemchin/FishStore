@@ -11,7 +11,7 @@ from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
     ConversationHandler
 from elasticpath import get_all_products, \
-    get_product_by_id, \
+    get_product_info_by_id, \
     get_photo_by_productid, \
     get_elasticpath_token, \
     get_client_token, \
@@ -55,11 +55,12 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     product_id = update.callback_query.data
-    product_info = get_product_by_id(elasticpath_token, product_id, store_id)
-    product_name = product_info['data']['attributes']['name']
-    product_description = product_info['data']['attributes']['description']
-    product_price = product_info['data']['meta']['display_price']['with_tax']['formatted']
-    product_sku = product_info['data']['attributes']['sku']
+    # product_info = get_product_by_id(elasticpath_token, product_id, store_id)
+    product_info = get_product_info_by_id(elasticpath_token, product_id, store_id)
+    product_name = product_info['product_name']
+    product_description = product_info['product_description']
+    product_price = product_info['product_price']
+    product_sku = product_info['product_sku']
     photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
     keyboard = [[InlineKeyboardButton('Buy 1kg', callback_data=f'add_to_cart {product_id} 1'),
                  InlineKeyboardButton('Buy 3kg', callback_data=f'add_to_cart {product_id} 3'),
