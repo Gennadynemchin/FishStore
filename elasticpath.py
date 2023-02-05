@@ -115,15 +115,13 @@ def get_product_info_by_id(token, product_id, store_id):
                'content-type': 'application/json',
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
-    response_info = requests.request("GET", url_info, headers=headers, data=payload)
-    response_description = requests.request("GET", url_description, headers=headers, data=payload)
-    response_info = response_info.json()
-    response_description = response_description.json()
-    product_name = response_info['data']['attributes']['name']
-    product_price = response_info['data']['meta']['display_price']['with_tax']['formatted']
-    product_sku = response_info['data']['attributes']['sku']
-    product_description = response_description['data']['attributes']['description']
-    print(product_name, product_price, product_sku, product_description)
+    response_info = requests.request("GET", url_info, headers=headers, data=payload).json()
+    response_description = requests.request("GET", url_description, headers=headers, data=payload).json()
+    response = {'product_name': response_info['data']['attributes']['name'],
+                'product_price': response_info['data']['meta']['display_price']['with_tax']['formatted'],
+                'product_sku': response_info['data']['attributes']['sku'],
+                'product_description': response_description['data']['attributes']['description']}
+    return response
 
 
 def get_price_by_pricebookid(token, pricebook_id, store_id):
@@ -205,7 +203,7 @@ def main():
     print(new_elasticpath_token)
     set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
     elasticpath_token = get_elasticpath_token('elasticpath_token')
-    get_product_info_by_id(elasticpath_token, '9e58963f-1813-45e9-afdf-5b312bbf74ca', store_id)
+    print(get_product_info_by_id(elasticpath_token, '9e58963f-1813-45e9-afdf-5b312bbf74ca', store_id))
 
 if __name__ == '__main__':
     main()
