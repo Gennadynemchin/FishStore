@@ -167,7 +167,7 @@ def is_token_expired(filename, store_id):
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
     response.raise_for_status()
-    if response.json().get('errors') is not None:
+    if response.status_code != 200:
         return True
     else:
         return False
