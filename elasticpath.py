@@ -35,7 +35,6 @@ def create_cart(token, store_id, customer_id, cart_name, cart_description):
     headers = {'accept': 'application/json',
                'content-type': 'application/json',
                'x-moltin-auth-store': store_id,
-               # 'x-moltin-customer-token': customer_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
@@ -113,9 +112,7 @@ def get_product_info_by_id(token, product_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response_info = requests.request("GET", url_info, headers=headers, data=payload).json()
-    response_info.raise_for_status()
     response_description = requests.request("GET", url_description, headers=headers, data=payload).json()
-    response_info.raise_for_status()
     response = {'product_name': response_info['data']['attributes']['name'],
                 'product_price': response_info['data']['meta']['display_price']['with_tax']['formatted'],
                 'product_sku': response_info['data']['attributes']['sku'],

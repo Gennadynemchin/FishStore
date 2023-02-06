@@ -101,19 +101,20 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
     total_price = cart_info['meta']['display_price']['with_tax']['formatted']
     products_in_cart_info = []
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')],
+                [InlineKeyboardButton('Remove all', callback_data='remove_all')]]
     for product in cart_info['data']:
         name = product['name']
         sku = product['sku']
         qty = product['quantity']
         price = product['meta']['display_price']['with_tax']['unit']['formatted']
-        product_total = product['meta']['display_price']['with_tax']['value']['formatted']
+        product_subtotal = product['meta']['display_price']['with_tax']['value']['formatted']
         message = (f'Name: {name}\n'
                    f'Qty: {qty}\n'
                    f'Price: {price}\n'
-                   f'Subtotal: {product_total}\n\n')
+                   f'Subtotal: {product_subtotal}\n\n')
         products_in_cart_info.append(message)
-    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')],
-                [InlineKeyboardButton('Remove all', callback_data='remove_all')]]
+        keyboard.append([InlineKeyboardButton(f'Delete {name}', callback_data=name)])
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     bot.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
