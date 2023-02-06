@@ -97,6 +97,7 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
+
     cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
@@ -128,18 +129,18 @@ def remove_item_from_cart(bot, update, token_filename, store_id, client_id, clie
     elasticpath_token = get_elasticpath_token(token_filename)
     delete_product_from_cart(elasticpath_token, cart_id, store_id, product_id)
     update.effective_message.delete()
-    cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
-    total_price = cart_info['meta']['display_price']['with_tax']['formatted']
+
+    cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
                  InlineKeyboardButton('Remove all', callback_data='remove_all')]]
     single_remove_keyboard = []
-    for product in cart_info['data']:
+    for product in cart_info:
         id = product['id']
         name = product['name']
-        qty = product['quantity']
-        price = product['meta']['display_price']['with_tax']['unit']['formatted']
-        product_subtotal = product['meta']['display_price']['with_tax']['value']['formatted']
+        qty = product['qty']
+        price = product['price']
+        product_subtotal = product['subtotal']
         message = f'Name: {name}\n Qty: {qty}\n Price: {price}\n Subtotal: {product_subtotal}\n\n'
         products_in_cart_info.append(message)
         single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
