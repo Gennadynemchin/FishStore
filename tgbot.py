@@ -119,6 +119,9 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                                        reply_markup=reply_markup)
     return State.HANDLE_CART
 
+# переместить удаление в корзина инфо. Сделать один паттерн. В корзина инфо условие: если колбэк.дата == продукт айди
+# то активируется кусок кода, удаляющий товар из корзины
+# ^remove_item тоже активирует handle_cart_info
 
 def remove_item_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
     product_id = update.callback_query.data.split(' ')[1]
