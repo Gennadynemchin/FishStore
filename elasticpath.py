@@ -13,8 +13,7 @@ def get_client_token(client_id, client_secret, store_id):
                'content-type': 'application/x-www-form-urlencoded',
                'x-moltin-auth-store': store_id}
     response = requests.request("POST", url, headers=headers, data=payload)
-    response.raise_for_status()
-    return response.json()
+    return response.json()['access_token']
 
 
 def get_all_products(token, store_id):
@@ -24,8 +23,7 @@ def get_all_products(token, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    response.raise_for_status()
-    return response.json()
+    return response.json()['data']
 
 
 def create_cart(token, store_id, customer_id, cart_name, cart_description):
@@ -37,7 +35,6 @@ def create_cart(token, store_id, customer_id, cart_name, cart_description):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
-    response.raise_for_status()
     return response.json()
 
 
@@ -48,7 +45,6 @@ def get_cart(token, cart_id, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    response.raise_for_status()
     return response.json()
 
 
@@ -60,7 +56,6 @@ def get_cart_items(token, cart_id, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
-    response.raise_for_status()
     return response.json()
 
 
@@ -75,7 +70,6 @@ def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
-    response.raise_for_status()
     return response.json()
 
 
@@ -87,8 +81,6 @@ def delete_product_from_cart(token, cart_id, store_id, product_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("DELETE", url, headers=headers, data=payload)
-    response.raise_for_status()
-    print(response.text)
 
 
 def remove_all_from_cart(token, cart_id, store_id):
@@ -99,7 +91,6 @@ def remove_all_from_cart(token, cart_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("DELETE", url, headers=headers, data=payload)
-    response.raise_for_status()
     return response
 
 
@@ -120,18 +111,6 @@ def get_product_info_by_id(token, product_id, store_id):
     return response
 
 
-def get_price_by_pricebookid(token, pricebook_id, store_id):
-    url = f'https://useast.api.elasticpath.com/pcm/pricebooks'
-    payload = {}
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': f'{store_id}',
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers, data=payload)
-    response.raise_for_status()
-    print(response.text)
-
-
 def get_photo_by_productid(token, product_id, store_id):
     url_get_fileid = f'https://useast.api.elasticpath.com/pcm/products/{product_id}/relationships/files'
     payload = {}
@@ -149,7 +128,6 @@ def get_photo_by_productid(token, product_id, store_id):
                'x-moltin-auth-store': f'{store_id}',
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url_get_photo, headers=headers, data=payload)
-    response.raise_for_status()
     file_link = response.json()['data']['link']['href']
     return file_link
 
@@ -163,7 +141,6 @@ def is_token_expired(filename, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    response.raise_for_status()
     if response.status_code != 200:
         return True
     else:
@@ -178,8 +155,6 @@ def get_single_product(token, product_id, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
-    response.raise_for_status()
-    print(response.text)
 
 
 def set_elasticpath_token(token, filename):
@@ -199,11 +174,7 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    new_elasticpath_token = get_client_token(client_id, client_secret, store_id)['access_token']
-    print(new_elasticpath_token)
-    set_elasticpath_token(new_elasticpath_token, 'elasticpath_token')
-    elasticpath_token = get_elasticpath_token('elasticpath_token')
-    print(get_product_info_by_id(elasticpath_token, '9e58963f-1813-45e9-afdf-5b312bbf74ca', store_id))
+
 
 if __name__ == '__main__':
     main()

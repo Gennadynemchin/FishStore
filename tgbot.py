@@ -1,6 +1,5 @@
 import os
 import logging
-import redis
 from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
@@ -10,6 +9,7 @@ from telegram.ext import Updater
 from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
     ConversationHandler
+from keyboards import get_all_products_keyboard
 from elasticpath import get_all_products, \
     get_product_info_by_id, \
     get_photo_by_productid, \
@@ -19,9 +19,9 @@ from elasticpath import get_all_products, \
     is_token_expired, \
     add_product_to_cart, \
     get_cart_items, \
-    remove_all_from_cart
+    remove_all_from_cart, \
+    delete_product_from_cart
 
-_database = None
 logger = logging.getLogger(__name__)
 
 
@@ -33,17 +33,7 @@ class State(Enum):
 
 
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
-    products = get_all_products(elasticpath_token, store_id)
-    keyboard = []
-    for product in products['data']:
-        product_name = product['attributes']['name']
-        product_id = product['id']
-        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
-    reply_markup = InlineKeyboardMarkup(keyboard)
+    reply_markup = get_all_products(token_filename, store_id)
     update.effective_message.delete()
     update.effective_message.reply_text(text=f"Let's choose:", reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
@@ -51,11 +41,10 @@ def handle_menu(bot, update, token_filename, store_id, client_id, client_secret)
 
 def handle_description(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     product_id = update.callback_query.data
-    # product_info = get_product_by_id(elasticpath_token, product_id, store_id)
     product_info = get_product_info_by_id(elasticpath_token, product_id, store_id)
     product_name = product_info['product_name']
     product_description = product_info['product_description']
@@ -81,7 +70,7 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
 
 def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret):
     if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_id = update.effective_user.id
@@ -95,39 +84,67 @@ def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret)
 def handle_cart_info(bot, update, token_filename, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
     if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
     total_price = cart_info['meta']['display_price']['with_tax']['formatted']
     products_in_cart_info = []
-    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')],
-                [InlineKeyboardButton('Remove all', callback_data='remove_all')]]
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
+                 InlineKeyboardButton('Remove all', callback_data='remove_all')]]
+    single_remove_keyboard = []
     for product in cart_info['data']:
+        id = product['id']
         name = product['name']
-        sku = product['sku']
         qty = product['quantity']
         price = product['meta']['display_price']['with_tax']['unit']['formatted']
         product_subtotal = product['meta']['display_price']['with_tax']['value']['formatted']
-        message = (f'Name: {name}\n'
-                   f'Qty: {qty}\n'
-                   f'Price: {price}\n'
-                   f'Subtotal: {product_subtotal}\n\n')
+        message = f'Name: {name}\n Qty: {qty}\n Price: {price}\n Subtotal: {product_subtotal}\n\n'
         products_in_cart_info.append(message)
-        keyboard.append([InlineKeyboardButton(f'Delete {name}', callback_data=name)])
+        single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
+    keyboard.insert(0, single_remove_keyboard)
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
-    bot.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
-                     chat_id=update.callback_query.message.chat_id,
-                     message_id=update.callback_query.message.message_id,
-                     reply_markup=reply_markup)
+    update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
+                                       reply_markup=reply_markup)
+    return State.HANDLE_CART
+
+
+def remove_item_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
+    product_id = update.callback_query.data.split(' ')[1]
+    cart_id = update.effective_user.id
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    delete_product_from_cart(elasticpath_token, cart_id, store_id, product_id)
+    update.effective_message.delete()
+    cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
+    total_price = cart_info['meta']['display_price']['with_tax']['formatted']
+    products_in_cart_info = []
+    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
+                 InlineKeyboardButton('Remove all', callback_data='remove_all')]]
+    single_remove_keyboard = []
+    for product in cart_info['data']:
+        id = product['id']
+        name = product['name']
+        qty = product['quantity']
+        price = product['meta']['display_price']['with_tax']['unit']['formatted']
+        product_subtotal = product['meta']['display_price']['with_tax']['value']['formatted']
+        message = f'Name: {name}\n Qty: {qty}\n Price: {price}\n Subtotal: {product_subtotal}\n\n'
+        products_in_cart_info.append(message)
+        single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
+    keyboard.insert(0, single_remove_keyboard)
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
+                                       reply_markup=reply_markup)
     return State.HANDLE_CART
 
 
 def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
     if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)['access_token']
+        new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
@@ -142,28 +159,7 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
     return State.HANDLE_CART
 
 
-def get_database_connection():
-    global _database
-    if _database is None:
-        database_password = os.getenv("REDIS_PASSWORD")
-        database_url = os.getenv("REDIS_URL")
-        database_port = os.getenv("REDIS_PORT")
-        _database = redis.Redis(host=database_url, port=database_port, password=database_password)
-    return _database
-
-
-def main():
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                        level=logging.DEBUG)
-    load_dotenv()
-    tg_token = os.getenv("TG_TOKEN")
-    client_id = os.getenv('CLIENT_ID')
-    client_secret = os.getenv('CLIENT_SECRET')
-    store_id = os.getenv('STORE_ID')
-    store_token = get_elasticpath_token('elasticpath_token')
-    token_filename = 'elasticpath_token'
-    products = get_all_products(store_token, store_id)
-
+def bot(tg_token, token_filename, store_id, client_id, client_secret):
     updater = Updater(tg_token)
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
@@ -220,11 +216,13 @@ def main():
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='remove_all'),
-                                    CallbackQueryHandler(partial(handle_cart_info,
+                                    CallbackQueryHandler(partial(remove_item_from_cart,
                                                                  token_filename=token_filename,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
-                                                                 client_secret=client_secret))
+                                                                 client_secret=client_secret),
+                                                         pattern='^remove_item'),
+
                                     ]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
                                                    token_filename=token_filename,
@@ -235,6 +233,20 @@ def main():
     dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
+
+
+
+def main():
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        level=logging.DEBUG)
+    load_dotenv()
+    tg_token = os.getenv("TG_TOKEN")
+    client_id = os.getenv('CLIENT_ID')
+    client_secret = os.getenv('CLIENT_SECRET')
+    store_id = os.getenv('STORE_ID')
+    token_filename = 'elasticpath_token'
+    bot(tg_token, token_filename, store_id, client_id, client_secret)
+
 
 
 if __name__ == '__main__':
