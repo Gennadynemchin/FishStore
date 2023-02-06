@@ -33,7 +33,17 @@ class State(Enum):
 
 
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
-    reply_markup = get_all_products(token_filename, store_id)
+    if is_token_expired(token_filename, store_id):
+        token = get_client_token(client_id, client_secret, store_id)
+        set_elasticpath_token(token, token_filename)
+    elastic_token = get_elasticpath_token(token_filename)
+    products = get_all_products(elastic_token, store_id)
+    keyboard = []
+    for product in products:
+        product_name = product['attributes']['name']
+        product_id = product['id']
+        keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
+    reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     update.effective_message.reply_text(text=f"Let's choose:", reply_markup=reply_markup)
     return State.HANDLE_DESCRIPTION
@@ -87,18 +97,17 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
-    cart_info = get_cart_items(elasticpath_token, cart_id, store_id)
-    total_price = cart_info['meta']['display_price']['with_tax']['formatted']
+    cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
                  InlineKeyboardButton('Remove all', callback_data='remove_all')]]
     single_remove_keyboard = []
-    for product in cart_info['data']:
+    for product in cart_info:
         id = product['id']
         name = product['name']
-        qty = product['quantity']
-        price = product['meta']['display_price']['with_tax']['unit']['formatted']
-        product_subtotal = product['meta']['display_price']['with_tax']['value']['formatted']
+        qty = product['qty']
+        price = product['price']
+        product_subtotal = product['subtotal']
         message = f'Name: {name}\n Qty: {qty}\n Price: {price}\n Subtotal: {product_subtotal}\n\n'
         products_in_cart_info.append(message)
         single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
@@ -159,7 +168,16 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
     return State.HANDLE_CART
 
 
-def bot(tg_token, token_filename, store_id, client_id, client_secret):
+def main():
+    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                        level=logging.DEBUG)
+    load_dotenv()
+    tg_token = os.getenv("TG_TOKEN")
+    client_id = os.getenv('CLIENT_ID')
+    client_secret = os.getenv('CLIENT_SECRET')
+    store_id = os.getenv('STORE_ID')
+    token_filename = 'elasticpath_token'
+
     updater = Updater(tg_token)
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
@@ -233,20 +251,6 @@ def bot(tg_token, token_filename, store_id, client_id, client_secret):
     dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
-
-
-
-def main():
-    logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                        level=logging.DEBUG)
-    load_dotenv()
-    tg_token = os.getenv("TG_TOKEN")
-    client_id = os.getenv('CLIENT_ID')
-    client_secret = os.getenv('CLIENT_SECRET')
-    store_id = os.getenv('STORE_ID')
-    token_filename = 'elasticpath_token'
-    bot(tg_token, token_filename, store_id, client_id, client_secret)
-
 
 
 if __name__ == '__main__':
