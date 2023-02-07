@@ -4,7 +4,7 @@ from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, \
-    InlineKeyboardMarkup
+    InlineKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Updater, Filters
 from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
@@ -149,7 +149,7 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
 def checkout(bot, update):
     update.effective_message.delete()
     user_first_name = update.effective_user.first_name
-    keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
+    keyboard = [[InlineKeyboardButton(text="Back to cart", callback_data="cart_info")]]
     update.effective_user.send_message(text=f'Dear {user_first_name}, '
                                             f'please share your email.',
                                        reply_markup=InlineKeyboardMarkup(keyboard))
@@ -250,6 +250,12 @@ def main():
                                                                            store_id=store_id,
                                                                            client_id=client_id,
                                                                            client_secret=client_secret)),
+                                      CallbackQueryHandler(partial(handle_cart_info,
+                                                                   token_filename=token_filename,
+                                                                   store_id=store_id,
+                                                                   client_id=client_id,
+                                                                   client_secret=client_secret),
+                                                           pattern='cart_info'),
                                       CallbackQueryHandler(partial(handle_menu,
                                                                    token_filename=token_filename,
                                                                    store_id=store_id,
