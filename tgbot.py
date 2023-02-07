@@ -4,13 +4,14 @@ from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, \
-    InlineKeyboardMarkup, ReplyKeyboardRemove
+    InlineKeyboardMarkup
 from telegram.ext import Updater, Filters
 from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
     ConversationHandler, \
     MessageHandler
 from elasticpath import get_all_products, \
+    update_elastic_token, \
     get_product_info_by_id, \
     get_photo_by_productid, \
     get_elasticpath_token, \
@@ -34,28 +35,25 @@ class State(Enum):
     WAITING_EMAIL = auto()
 
 
-def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
-    if is_token_expired(token_filename, store_id):
-        token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(token, token_filename)
-    elastic_token = get_elasticpath_token(token_filename)
+def handle_menu(bot, update, token_path, store_id, client_id, client_secret):
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elastic_token = get_elasticpath_token(token_path)
     products = get_all_products(elastic_token, store_id)
     keyboard = []
     for product in products:
         product_name = product['attributes']['name']
         product_id = product['id']
         keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
-    reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
-    update.effective_message.reply_text(text=f"Let's choose:", reply_markup=reply_markup)
+    update.effective_message.reply_text(text=f"Let's choose:", reply_markup=InlineKeyboardMarkup(keyboard))
     return State.HANDLE_DESCRIPTION
 
 
-def handle_description(bot, update, token_filename, store_id, client_id, client_secret):
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
+def handle_description(bot, update, token_path, store_id, client_id, client_secret):
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elasticpath_token = get_elasticpath_token(token_path)
     product_id = update.callback_query.data
     product_info = get_product_info_by_id(elasticpath_token, product_id, store_id)
     product_name = product_info['product_name']
@@ -68,7 +66,6 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
                  InlineKeyboardButton('Buy 10kg', callback_data=f'add_to_cart {product_id} 10')],
                 [InlineKeyboardButton('Go to cart', callback_data='cart_info')],
                 [InlineKeyboardButton('Back', callback_data='back')]]
-    reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     bot.send_photo(chat_id=update.callback_query.message.chat_id,
                    caption=f'{product_name}\n'
@@ -76,15 +73,14 @@ def handle_description(bot, update, token_filename, store_id, client_id, client_
                            f'{product_price}\n'
                            f'{product_sku}',
                    photo=photo_link,
-                   reply_markup=reply_markup)
+                   reply_markup=InlineKeyboardMarkup(keyboard))
     return State.HANDLE_DESCRIPTION
 
 
-def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret):
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
+def add_to_cart(bot, update, token_path, store_id, client_id, client_secret):
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elasticpath_token = get_elasticpath_token(token_path)
     cart_id = update.effective_user.id
     product_id = update.callback_query.data.split(' ')[1]
     quantity = int(update.callback_query.data.split(' ')[2])
@@ -93,12 +89,11 @@ def add_to_cart(bot, update, token_filename, store_id, client_id, client_secret)
     return State.HANDLE_DESCRIPTION
 
 
-def handle_cart_info(bot, update, token_filename, store_id, client_id, client_secret):
+def handle_cart_info(bot, update, token_path, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elasticpath_token = get_elasticpath_token(token_path)
     if update.callback_query:
         try:
             product = update.callback_query.data.split(' ')[1]
@@ -128,12 +123,11 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
     return State.HANDLE_CART
 
 
-def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
+def handle_remove_all_from_cart(bot, update, token_path, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elasticpath_token = get_elasticpath_token(token_path)
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     update.callback_query.answer(text='The product has been added to cart', show_alert=False)
@@ -156,14 +150,13 @@ def checkout(bot, update):
     return State.WAITING_EMAIL
 
 
-def get_email(bot, update, token_filename, store_id, client_id, client_secret):
+def get_email(bot, update, token_path, store_id, client_id, client_secret):
     user_name = update.effective_message.from_user.first_name
     user_email = update.effective_message.text
     user_password = update.effective_message.from_user.id
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
+    if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)
+    elasticpath_token = get_elasticpath_token(token_path)
     create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
     keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
     update.message.reply_text(text=f'Your email {user_email}. We contact you shortly',
@@ -179,66 +172,66 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    token_filename = 'elasticpath_token'
+    token_path = 'elasticpath_token'
 
     updater = Updater(tg_token)
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', partial(handle_menu,
-                                                      token_filename=token_filename,
+                                                      token_path=token_path,
                                                       store_id=store_id,
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
         states={State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
-                                                                 token_filename=token_filename,
+                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret
                                                                  ),
                                                          pattern='remove_all'),
                                     CallbackQueryHandler(partial(handle_menu,
-                                                                 token_filename=token_filename,
+                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret
                                                                  ))],
                 State.HANDLE_DESCRIPTION: [CallbackQueryHandler(partial(add_to_cart,
-                                                                        token_filename=token_filename,
+                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='^add_to_cart'),
                                            CallbackQueryHandler(partial(handle_cart_info,
-                                                                        token_filename=token_filename,
+                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='cart_info'),
                                            CallbackQueryHandler(partial(handle_menu,
-                                                                        token_filename=token_filename,
+                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='back'),
                                            CallbackQueryHandler(partial(handle_description,
-                                                                        token_filename=token_filename,
+                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret))],
                 State.HANDLE_CART: [CallbackQueryHandler(partial(handle_menu,
-                                                                 token_filename=token_filename,
+                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='menu'),
                                     CallbackQueryHandler(partial(handle_remove_all_from_cart,
-                                                                 token_filename=token_filename,
+                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='remove_all'),
                                     CallbackQueryHandler(partial(handle_cart_info,
-                                                                 token_filename=token_filename,
+                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
@@ -246,23 +239,23 @@ def main():
                                     CallbackQueryHandler(checkout, pattern='checkout')
                                     ],
                 State.WAITING_EMAIL: [MessageHandler(Filters.text, partial(get_email,
-                                                                           token_filename=token_filename,
+                                                                           token_path=token_path,
                                                                            store_id=store_id,
                                                                            client_id=client_id,
                                                                            client_secret=client_secret)),
                                       CallbackQueryHandler(partial(handle_cart_info,
-                                                                   token_filename=token_filename,
+                                                                   token_path=token_path,
                                                                    store_id=store_id,
                                                                    client_id=client_id,
                                                                    client_secret=client_secret),
                                                            pattern='cart_info'),
                                       CallbackQueryHandler(partial(handle_menu,
-                                                                   token_filename=token_filename,
+                                                                   token_path=token_path,
                                                                    store_id=store_id,
                                                                    client_id=client_id,
                                                                    client_secret=client_secret))]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
-                                                   token_filename=token_filename,
+                                                   token_path=token_path,
                                                    store_id=store_id,
                                                    client_id=client_id,
                                                    client_secret=client_secret))])

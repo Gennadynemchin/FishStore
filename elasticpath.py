@@ -1,7 +1,5 @@
-import os
 import json
 import requests
-from dotenv import load_dotenv
 
 
 def get_client_token(client_id, client_secret, store_id):
@@ -26,18 +24,6 @@ def get_all_products(token, store_id):
     return response.json()['data']
 
 
-def create_cart(token, store_id, customer_id, cart_name, cart_description):
-    url = 'https://useast.api.elasticpath.com/v2/carts'
-    payload = json.dumps({"data": {"name": cart_name,
-                                   "description": cart_description}})
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': store_id,
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("POST", url, headers=headers, data=payload)
-    return response.json()
-
-
 def get_cart_items(token, cart_id, store_id):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
     payload = {}
@@ -60,7 +46,6 @@ def get_cart_items(token, cart_id, store_id):
 def add_product_to_cart(token, cart_id, store_id, product_id, quantity: int):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
     payload = json.dumps({"data": {'id': product_id,
-                                   # 'sku': '111111',
                                    'type': "cart_item",
                                    'quantity': quantity}})
     headers = {'accept': 'application/json',
@@ -79,6 +64,7 @@ def delete_product_from_cart(token, cart_id, store_id, product_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("DELETE", url, headers=headers, data=payload)
+    return response.json()
 
 
 def remove_all_from_cart(token, cart_id, store_id):
@@ -145,34 +131,8 @@ def create_customer(name, email, password, store_id, token):
     print(response.text)
 
 
-def get_customer():
-    url = "{{baseUrl}}/customers/{{customerID}}"
-    payload = {}
-    headers = {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'x-moltin-auth-store': '{{storeID}}',
-        'Authorization': 'Bearer {{accessToken}}'
-    }
-    response = requests.request("GET", url, headers=headers, data=payload)
-    print(response.text)
-
-
-def get_all_customers(store_id, token):
-    url = 'https://useast.api.elasticpath.com/v2/customers'
-    payload = {}
-    headers = {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'x-moltin-auth-store': store_id,
-        'Authorization': f'Bearer {token}'
-    }
-    response = requests.request("GET", url, headers=headers, data=payload)
-    print(response.text)
-
-
-def is_token_expired(filename, store_id):
-    with open(filename, "r") as elasticpath_token:
+def is_token_expired(token_path, store_id):
+    with open(token_path, "r") as elasticpath_token:
         token = elasticpath_token.read()
     url = 'https://useast.api.elasticpath.com/pcm/products'
     headers = {'accept': 'application/json',
@@ -186,26 +146,28 @@ def is_token_expired(filename, store_id):
         return False
 
 
-def set_elasticpath_token(token, filename):
-    with open(filename, "w") as elasticpath_token:
+def update_elastic_token(client_id, client_secret, store_id, token_path):
+    url = 'https://useast.api.elasticpath.com/oauth/access_token'
+    payload = f'client_id={client_id}&' \
+              f'client_secret={client_secret}&' \
+              'grant_type=client_credentials'
+    headers = {'accept': 'application/json',
+               'content-type': 'application/x-www-form-urlencoded',
+               'x-moltin-auth-store': store_id}
+    response = requests.request("POST", url, headers=headers, data=payload)
+    token = response.json()['access_token']
+    with open(token_path, "w") as elasticpath_token:
         elasticpath_token.write(token)
     return token
 
 
-def get_elasticpath_token(filename):
-    with open(filename, "r") as elasticpath_token:
-        token = elasticpath_token.read()
+def set_elasticpath_token(token, token_path):
+    with open(token_path, "w") as elasticpath_token:
+        elasticpath_token.write(token)
     return token
 
 
-def main():
-    load_dotenv()
-    client_id = os.getenv('CLIENT_ID')
-    client_secret = os.getenv('CLIENT_SECRET')
-    store_id = os.getenv('STORE_ID')
-
-    get_all_customers(store_id, '53f82115f0d30903742e9162943b00a74ff05a76')
-
-
-if __name__ == '__main__':
-    main()
+def get_elasticpath_token(token_path):
+    with open(token_path, "r") as elasticpath_token:
+        token = elasticpath_token.read()
+    return token
