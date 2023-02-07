@@ -21,6 +21,7 @@ from elasticpath import get_all_products, \
     get_cart_items, \
     remove_all_from_cart, \
     delete_product_from_cart
+from time import sleep
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,12 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
-
+    if update.callback_query:
+        try:
+            product = update.callback_query.data.split(' ')[1]
+            delete_product_from_cart(elasticpath_token, cart_id, store_id, product)
+        except IndexError:
+            pass
     cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
@@ -119,9 +125,7 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
                                        reply_markup=reply_markup)
     return State.HANDLE_CART
 
-# переместить удаление в корзина инфо. Сделать один паттерн. В корзина инфо условие: если колбэк.дата == продукт айди
-# то активируется кусок кода, удаляющий товар из корзины
-# ^remove_item тоже активирует handle_cart_info
+
 
 def remove_item_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
     product_id = update.callback_query.data.split(' ')[1]
@@ -151,6 +155,7 @@ def remove_item_from_cart(bot, update, token_filename, store_id, client_id, clie
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
                                        reply_markup=reply_markup)
+    print(update.callback_query.data)
     return State.HANDLE_CART
 
 
@@ -238,7 +243,7 @@ def main():
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='remove_all'),
-                                    CallbackQueryHandler(partial(remove_item_from_cart,
+                                    CallbackQueryHandler(partial(handle_cart_info,
                                                                  token_filename=token_filename,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
