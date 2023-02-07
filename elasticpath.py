@@ -38,16 +38,6 @@ def create_cart(token, store_id, customer_id, cart_name, cart_description):
     return response.json()
 
 
-def get_cart(token, cart_id, store_id):
-    url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}'
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': store_id,
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers)
-    return response.json()
-
-
 def get_cart_items(token, cart_id, store_id):
     url = f'https://useast.api.elasticpath.com/v2/carts/{cart_id}/items'
     payload = {}
@@ -153,16 +143,6 @@ def is_token_expired(filename, store_id):
         return True
     else:
         return False
-
-
-def get_single_product(token, product_id, store_id):
-    url = f'https://useast.api.elasticpath.com/v2/products/{product_id}'
-    payload = {}
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': store_id,
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers, data=payload)
 
 
 def set_elasticpath_token(token, filename):

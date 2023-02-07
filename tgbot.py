@@ -5,11 +5,11 @@ from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, \
     InlineKeyboardMarkup
-from telegram.ext import Updater
+from telegram.ext import Updater, Filters
 from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
-    ConversationHandler
-from keyboards import get_all_products_keyboard
+    ConversationHandler, \
+    MessageHandler
 from elasticpath import get_all_products, \
     get_product_info_by_id, \
     get_photo_by_productid, \
@@ -21,7 +21,6 @@ from elasticpath import get_all_products, \
     get_cart_items, \
     remove_all_from_cart, \
     delete_product_from_cart
-from time import sleep
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +30,7 @@ class State(Enum):
     HANDLE_MENU = auto()
     HANDLE_DESCRIPTION = auto()
     HANDLE_CART = auto()
+    WAITING_EMAIL = auto()
 
 
 def handle_menu(bot, update, token_filename, store_id, client_id, client_secret):
@@ -107,7 +107,9 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
     cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
-                 InlineKeyboardButton('Remove all', callback_data='remove_all')]]
+                 InlineKeyboardButton('Remove all', callback_data='remove_all')],
+                [InlineKeyboardButton('Checkout', callback_data='checkout')]
+                ]
     single_remove_keyboard = []
     for product in cart_info:
         id = product['id']
@@ -119,43 +121,9 @@ def handle_cart_info(bot, update, token_filename, store_id, client_id, client_se
         products_in_cart_info.append(message)
         single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
     keyboard.insert(0, single_remove_keyboard)
-    reply_markup = InlineKeyboardMarkup(keyboard)
     update.effective_message.delete()
     update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
-                                       reply_markup=reply_markup)
-    return State.HANDLE_CART
-
-
-
-def remove_item_from_cart(bot, update, token_filename, store_id, client_id, client_secret):
-    product_id = update.callback_query.data.split(' ')[1]
-    cart_id = update.effective_user.id
-    if is_token_expired(token_filename, store_id):
-        new_token = get_client_token(client_id, client_secret, store_id)
-        set_elasticpath_token(new_token, token_filename)
-    elasticpath_token = get_elasticpath_token(token_filename)
-    delete_product_from_cart(elasticpath_token, cart_id, store_id, product_id)
-    update.effective_message.delete()
-
-    cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
-    products_in_cart_info = []
-    keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
-                 InlineKeyboardButton('Remove all', callback_data='remove_all')]]
-    single_remove_keyboard = []
-    for product in cart_info:
-        id = product['id']
-        name = product['name']
-        qty = product['qty']
-        price = product['price']
-        product_subtotal = product['subtotal']
-        message = f'Name: {name}\n Qty: {qty}\n Price: {price}\n Subtotal: {product_subtotal}\n\n'
-        products_in_cart_info.append(message)
-        single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
-    keyboard.insert(0, single_remove_keyboard)
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
-                                       reply_markup=reply_markup)
-    print(update.callback_query.data)
+                                       reply_markup=InlineKeyboardMarkup(keyboard))
     return State.HANDLE_CART
 
 
@@ -175,6 +143,24 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
                      message_id=update.callback_query.message.message_id,
                      reply_markup=reply_markup)
     return State.HANDLE_CART
+
+
+def checkout(bot, update):
+    update.effective_message.delete()
+    user_first_name = update.effective_user.first_name
+    query = update.callback_query
+    query.answer()
+    keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
+    update.effective_user.send_message(text=f'Dear {user_first_name}, '
+                                            f'please share your email.',
+                                       reply_markup=InlineKeyboardMarkup(keyboard))
+    return State.WAITING_EMAIL
+
+
+def get_email(bot, update):
+    user_email = update.effective_message.text
+    print(user_email)
+    return State.WAITING_EMAIL
 
 
 def main():
@@ -249,14 +235,14 @@ def main():
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='^remove_item'),
-
-                                    ]},
+                                    CallbackQueryHandler(checkout, pattern='checkout')
+                                    ],
+                State.WAITING_EMAIL: [MessageHandler(Filters.text, get_email)]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
                                                    token_filename=token_filename,
                                                    store_id=store_id,
                                                    client_id=client_id,
                                                    client_secret=client_secret))])
-
     dp.add_handler(conv_handler)
     updater.start_polling()
     updater.idle()
