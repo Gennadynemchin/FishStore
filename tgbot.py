@@ -166,8 +166,10 @@ def get_email(bot, update, token_filename, store_id, client_id, client_secret):
         new_token = get_client_token(client_id, client_secret, store_id)
         set_elasticpath_token(new_token, token_filename)
     elasticpath_token = get_elasticpath_token(token_filename)
-    store_id = '777'
     create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
+    keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
+    update.effective_user.send_message(text=f'Your email {user_email}. We contact you shortly',
+                                       reply_markup=InlineKeyboardMarkup(keyboard))
     return State.WAITING_EMAIL
 
 
@@ -249,7 +251,12 @@ def main():
                                                                            token_filename=token_filename,
                                                                            store_id=store_id,
                                                                            client_id=client_id,
-                                                                           client_secret=client_secret))]},
+                                                                           client_secret=client_secret)),
+                                      CallbackQueryHandler(partial(handle_menu,
+                                                                   token_filename=token_filename,
+                                                                   store_id=store_id,
+                                                                   client_id=client_id,
+                                                                   client_secret=client_secret))]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
                                                    token_filename=token_filename,
                                                    store_id=store_id,
