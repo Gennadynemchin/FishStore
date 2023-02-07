@@ -3,8 +3,7 @@ import logging
 from enum import Enum, auto
 from functools import partial
 from dotenv import load_dotenv
-from telegram import InlineKeyboardButton, \
-    InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, Filters
 from telegram.ext import CallbackQueryHandler, \
     CommandHandler, \
@@ -15,8 +14,6 @@ from elasticpath import get_all_products, \
     get_product_info_by_id, \
     get_photo_by_productid, \
     get_elasticpath_token, \
-    get_client_token, \
-    set_elasticpath_token, \
     is_token_expired, \
     add_product_to_cart, \
     get_cart_items, \
@@ -104,8 +101,7 @@ def handle_cart_info(bot, update, token_path, store_id, client_id, client_secret
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
                  InlineKeyboardButton('Remove all', callback_data='remove_all')],
-                [InlineKeyboardButton('Checkout', callback_data='checkout')]
-                ]
+                [InlineKeyboardButton('Checkout', callback_data='checkout')]]
     single_remove_keyboard = []
     for product in cart_info:
         id = product['id']
