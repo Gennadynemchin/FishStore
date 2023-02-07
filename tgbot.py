@@ -20,7 +20,8 @@ from elasticpath import get_all_products, \
     add_product_to_cart, \
     get_cart_items, \
     remove_all_from_cart, \
-    delete_product_from_cart
+    delete_product_from_cart, \
+    create_customer
 
 logger = logging.getLogger(__name__)
 
@@ -157,9 +158,16 @@ def checkout(bot, update):
     return State.WAITING_EMAIL
 
 
-def get_email(bot, update):
+def get_email(bot, update, token_filename, store_id, client_id, client_secret):
+    user_name = update.effective_message.from_user.first_name
     user_email = update.effective_message.text
-    print(user_email)
+    user_password = update.effective_message.from_user.id
+    if is_token_expired(token_filename, store_id):
+        new_token = get_client_token(client_id, client_secret, store_id)
+        set_elasticpath_token(new_token, token_filename)
+    elasticpath_token = get_elasticpath_token(token_filename)
+    store_id = '777'
+    create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
     return State.WAITING_EMAIL
 
 
@@ -237,7 +245,11 @@ def main():
                                                          pattern='^remove_item'),
                                     CallbackQueryHandler(checkout, pattern='checkout')
                                     ],
-                State.WAITING_EMAIL: [MessageHandler(Filters.text, get_email)]},
+                State.WAITING_EMAIL: [MessageHandler(Filters.text, partial(get_email,
+                                                                           token_filename=token_filename,
+                                                                           store_id=store_id,
+                                                                           client_id=client_id,
+                                                                           client_secret=client_secret))]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
                                                    token_filename=token_filename,
                                                    store_id=store_id,

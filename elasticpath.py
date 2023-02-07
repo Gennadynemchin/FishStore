@@ -49,10 +49,10 @@ def get_cart_items(token, cart_id, store_id):
     products = []
     for product in response['data']:
         products.append({'id': product['id'],
-                                  'name': product['name'],
-                                  'qty': product['quantity'],
-                                  'price': product['meta']['display_price']['with_tax']['unit']['formatted'],
-                                  'subtotal': product['meta']['display_price']['with_tax']['value']['formatted']})
+                         'name': product['name'],
+                         'qty': product['quantity'],
+                         'price': product['meta']['display_price']['with_tax']['unit']['formatted'],
+                         'subtotal': product['meta']['display_price']['with_tax']['value']['formatted']})
     total_price = response['meta']['display_price']['with_tax']['formatted']
     return products, total_price
 
@@ -130,6 +130,47 @@ def get_photo_by_productid(token, product_id, store_id):
     return file_link
 
 
+def create_customer(name, email, password, store_id, token):
+    url = f'https://useast.api.elasticpath.com/v2/customers'
+    payload = json.dumps({"data": {
+        "type": "customer",
+        "name": str(name),
+        "email": str(email),
+        "password": str(password)}})
+    headers = {'accept': 'application/json',
+               'content-type': 'application/json',
+               'x-moltin-auth-store': store_id,
+               'Authorization': f'Bearer {token}'}
+    response = requests.request("POST", url, headers=headers, data=payload)
+    print(response.text)
+
+
+def get_customer():
+    url = "{{baseUrl}}/customers/{{customerID}}"
+    payload = {}
+    headers = {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'x-moltin-auth-store': '{{storeID}}',
+        'Authorization': 'Bearer {{accessToken}}'
+    }
+    response = requests.request("GET", url, headers=headers, data=payload)
+    print(response.text)
+
+
+def get_all_customers(store_id, token):
+    url = 'https://useast.api.elasticpath.com/v2/customers'
+    payload = {}
+    headers = {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'x-moltin-auth-store': store_id,
+        'Authorization': f'Bearer {token}'
+    }
+    response = requests.request("GET", url, headers=headers, data=payload)
+    print(response.text)
+
+
 def is_token_expired(filename, store_id):
     with open(filename, "r") as elasticpath_token:
         token = elasticpath_token.read()
@@ -162,6 +203,8 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
+
+    get_all_customers(store_id, '53f82115f0d30903742e9162943b00a74ff05a76')
 
 
 if __name__ == '__main__':
