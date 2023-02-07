@@ -149,8 +149,6 @@ def handle_remove_all_from_cart(bot, update, token_filename, store_id, client_id
 def checkout(bot, update):
     update.effective_message.delete()
     user_first_name = update.effective_user.first_name
-    query = update.callback_query
-    query.answer()
     keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
     update.effective_user.send_message(text=f'Dear {user_first_name}, '
                                             f'please share your email.',
@@ -168,8 +166,8 @@ def get_email(bot, update, token_filename, store_id, client_id, client_secret):
     elasticpath_token = get_elasticpath_token(token_filename)
     create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
     keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
-    update.effective_user.send_message(text=f'Your email {user_email}. We contact you shortly',
-                                       reply_markup=InlineKeyboardMarkup(keyboard))
+    update.message.reply_text(text=f'Your email {user_email}. We contact you shortly',
+                              reply_markup=InlineKeyboardMarkup(keyboard))
     return State.WAITING_EMAIL
 
 
