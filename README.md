@@ -1,5 +1,6 @@
-# FishStore
+# FishStore Telegram bot
 
+![example.gif](example.gif)
 
 ### How to install
 
