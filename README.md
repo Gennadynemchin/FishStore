@@ -41,7 +41,7 @@ tgbot.py
 
 1. Copy this repository to your server:
 ```
-git clone git@github.com:Gennadynemchin/FishStore.git
+git clone https://github.com/Gennadynemchin/FishStore.git
 ```
 2. `cd FishStore`
 3. `nano .env.example`. Then fill all needed variables as shown above. 
