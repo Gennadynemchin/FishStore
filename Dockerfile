@@ -12,4 +12,4 @@ COPY . /app
 
 ENTRYPOINT [ "python" ]
 
-CMD ["bot.py" ]
+CMD ["tgbot.py" ]
