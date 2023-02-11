@@ -46,6 +46,7 @@ git clone https://github.com/Gennadynemchin/FishStore.git
 2. `cd FishStore`
 3. `nano .env.example`. Then fill all needed variables as shown above. 
 Save edited file as `.env`;
-4. Build an image:
+4. `mv elasticpath_token.example elasticpath_token`
+5. Build an image:
 `docker build -t your-image-name . `
-5. Then `docker run -d --restart always your-image-name`
+6. Then `docker run -d --restart always your-image-name`
