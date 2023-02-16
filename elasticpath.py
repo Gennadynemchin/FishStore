@@ -150,8 +150,7 @@ def is_token_expired(token_path, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    # os.environ["TESTKEY"] = "TESTVALUE"
-    print(os.getenv("TESTKEY"))
+    print(response.status_code)
     return response.status_code != 200
 
 
@@ -166,18 +165,21 @@ def update_elastic_token(client_id, client_secret, store_id, token_path):
     response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
     token = response.json()['access_token']
+    os.environ["ELASTIC_TOKEN"] = token
+    '''
     with open(token_path, "w") as elasticpath_token:
         elasticpath_token.write(token)
-    return token
-
-
-def set_elasticpath_token(token, token_path):
-    with open(token_path, "w") as elasticpath_token:
-        elasticpath_token.write(token)
-    return token
+    '''
+    return os.getenv('ELASTIC_TOKEN')
 
 
 def get_elasticpath_token(token_path):
     with open(token_path, "r") as elasticpath_token:
         token = elasticpath_token.read()
     return token
+
+
+try:
+    get_all_products(os.getenv('ELASTIC_TOKEN'), '8165a9a1-dca1-4df3-b733-e223ba60ff75')
+except requests.exceptions.HTTPError:
+    print('Exception', os.getenv('ELASTIC_TOKEN'))
