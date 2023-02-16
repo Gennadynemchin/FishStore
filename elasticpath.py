@@ -4,9 +4,9 @@ import requests
 
 def get_client_token(client_id, client_secret, store_id):
     url = 'https://useast.api.elasticpath.com/oauth/access_token'
-    payload = f'client_id={client_id}&' \
-              f'client_secret={client_secret}&' \
-              'grant_type=client_credentials'
+    payload = {'client_id': client_id,
+               'client_secret': client_secret,
+               'grant_type': 'client_credentials'}
     headers = {'accept': 'application/json',
                'content-type': 'application/x-www-form-urlencoded',
                'x-moltin-auth-store': store_id}
@@ -159,9 +159,9 @@ def is_token_expired(token_path, store_id):
 
 def update_elastic_token(client_id, client_secret, store_id, token_path):
     url = 'https://useast.api.elasticpath.com/oauth/access_token'
-    payload = f'client_id={client_id}&' \
-              f'client_secret={client_secret}&' \
-              'grant_type=client_credentials'
+    payload = {'client_id': client_id,
+               'client_secret': client_secret,
+               'grant_type': 'client_credentials'}
     headers = {'accept': 'application/json',
                'content-type': 'application/x-www-form-urlencoded',
                'x-moltin-auth-store': store_id}
