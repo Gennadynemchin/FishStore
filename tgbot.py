@@ -5,21 +5,21 @@ from functools import partial
 from dotenv import load_dotenv
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, Filters
-from telegram.ext import CallbackQueryHandler, \
-    CommandHandler, \
-    ConversationHandler, \
-    MessageHandler
-from elasticpath import get_all_products, \
-    update_elastic_token, \
-    get_product_info_by_id, \
-    get_photo_by_productid, \
-    get_elasticpath_token, \
-    is_token_expired, \
-    add_product_to_cart, \
-    get_cart_items, \
-    remove_all_from_cart, \
-    delete_product_from_cart, \
-    create_customer
+from telegram.ext import (CallbackQueryHandler,
+                          CommandHandler,
+                          ConversationHandler,
+                          MessageHandler)
+from elasticpath import (get_all_products,
+                         update_elastic_token,
+                         get_product_info_by_id,
+                         get_photo_by_productid,
+                         get_elasticpath_token,
+                         is_token_expired,
+                         add_product_to_cart,
+                         get_cart_items,
+                         remove_all_from_cart,
+                         delete_product_from_cart,
+                         create_customer)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def handle_menu(bot, update, token_path, store_id, client_id, client_secret):
         product_id = product['id']
         keyboard.append([InlineKeyboardButton(product_name, callback_data=product_id)])
     update.effective_message.delete()
-    update.effective_message.reply_text(text=f"Let's choose:", reply_markup=InlineKeyboardMarkup(keyboard))
+    update.effective_message.reply_text(text="Let's choose:", reply_markup=InlineKeyboardMarkup(keyboard))
     return State.HANDLE_DESCRIPTION
 
 
@@ -63,7 +63,6 @@ def handle_description(bot, update, token_path, store_id, client_id, client_secr
                  InlineKeyboardButton('Buy 10kg', callback_data=f'add_to_cart {product_id} 10')],
                 [InlineKeyboardButton('Go to cart', callback_data='cart_info')],
                 [InlineKeyboardButton('Back', callback_data='back')]]
-    update.effective_message.delete()
     bot.send_photo(chat_id=update.callback_query.message.chat_id,
                    caption=f'{product_name}\n'
                            f'{product_description}\n'
@@ -71,6 +70,7 @@ def handle_description(bot, update, token_path, store_id, client_id, client_secr
                            f'{product_sku}',
                    photo=photo_link,
                    reply_markup=InlineKeyboardMarkup(keyboard))
+    update.effective_message.delete()
     return State.HANDLE_DESCRIPTION
 
 
@@ -113,9 +113,9 @@ def handle_cart_info(bot, update, token_path, store_id, client_id, client_secret
         products_in_cart_info.append(message)
         single_remove_keyboard.append(InlineKeyboardButton(f'Delete {name}', callback_data=f'remove_item {id}'))
     keyboard.insert(0, single_remove_keyboard)
-    update.effective_message.delete()
     update.effective_user.send_message(text=f'{" ".join(products_in_cart_info)}\n Total: {total_price}',
                                        reply_markup=InlineKeyboardMarkup(keyboard))
+    update.effective_message.delete()
     return State.HANDLE_CART
 
 
@@ -127,22 +127,22 @@ def handle_remove_all_from_cart(bot, update, token_path, store_id, client_id, cl
     remove_all_from_cart(elasticpath_token, cart_id, store_id)
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     update.callback_query.answer(text='The product has been added to cart', show_alert=False)
-    update.effective_message.delete()
     reply_markup = InlineKeyboardMarkup(keyboard)
     bot.send_message(text='Now your cart is empty. Please go to the "Menu"',
                      chat_id=update.callback_query.message.chat_id,
                      message_id=update.callback_query.message.message_id,
                      reply_markup=reply_markup)
+    update.effective_message.delete()
     return State.HANDLE_CART
 
 
 def checkout(bot, update):
-    update.effective_message.delete()
     user_first_name = update.effective_user.first_name
     keyboard = [[InlineKeyboardButton(text="Back to cart", callback_data="cart_info")]]
     update.effective_user.send_message(text=f'Dear {user_first_name}, '
                                             f'please share your email.',
                                        reply_markup=InlineKeyboardMarkup(keyboard))
+    update.effective_message.delete()
     return State.WAITING_EMAIL
 
 
@@ -153,10 +153,13 @@ def get_email(bot, update, token_path, store_id, client_id, client_secret):
     if is_token_expired(token_path, store_id):
         update_elastic_token(client_id, client_secret, store_id, token_path)
     elasticpath_token = get_elasticpath_token(token_path)
-    create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
-    keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
-    update.message.reply_text(text=f'Your email {user_email}. We contact you shortly',
-                              reply_markup=InlineKeyboardMarkup(keyboard))
+    customer = create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
+    if customer:
+        keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
+        update.message.reply_text(text=f'Your email {user_email}. We contact you shortly',
+                                  reply_markup=InlineKeyboardMarkup(keyboard))
+    else:
+        update.message.reply_text(text='Your email is not valid. Try again')
     return State.WAITING_EMAIL
 
 

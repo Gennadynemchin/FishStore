@@ -1,5 +1,6 @@
 import json
 import requests
+import os
 
 
 def get_client_token(client_id, client_secret, store_id):
@@ -137,8 +138,7 @@ def create_customer(name, email, password, store_id, token):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("POST", url, headers=headers, data=payload)
-    response.raise_for_status()
-    print(response.text)
+    return response.status_code == 201
 
 
 def is_token_expired(token_path, store_id):
@@ -150,11 +150,9 @@ def is_token_expired(token_path, store_id):
                'x-moltin-auth-store': store_id,
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers)
-    response.raise_for_status()
-    if response.status_code != 200:
-        return True
-    else:
-        return False
+    # os.environ["TESTKEY"] = "TESTVALUE"
+    print(os.getenv("TESTKEY"))
+    return response.status_code != 200
 
 
 def update_elastic_token(client_id, client_secret, store_id, token_path):
