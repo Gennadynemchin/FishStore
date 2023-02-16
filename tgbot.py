@@ -19,7 +19,8 @@ from elasticpath import (get_all_products,
                          get_cart_items,
                          remove_all_from_cart,
                          delete_product_from_cart,
-                         create_customer)
+                         create_customer,
+                         is_expired)
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,13 @@ class State(Enum):
 
 
 def handle_menu(bot, update, token_path, store_id, client_id, client_secret):
-    if is_token_expired(token_path, store_id):
+    '''if is_token_expired(token_path, store_id):
+        update_elastic_token(client_id, client_secret, store_id, token_path)'''
+    if is_expired():
         update_elastic_token(client_id, client_secret, store_id, token_path)
-    elastic_token = get_elasticpath_token(token_path)
+
+    # elastic_token = get_elasticpath_token(token_path)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
     products = get_all_products(elastic_token, store_id)
     keyboard = []
     for product in products:

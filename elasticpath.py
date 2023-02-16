@@ -1,19 +1,7 @@
 import json
 import requests
 import os
-
-
-def get_client_token(client_id, client_secret, store_id):
-    url = 'https://useast.api.elasticpath.com/oauth/access_token'
-    payload = {'client_id': client_id,
-               'client_secret': client_secret,
-               'grant_type': 'client_credentials'}
-    headers = {'accept': 'application/json',
-               'content-type': 'application/x-www-form-urlencoded',
-               'x-moltin-auth-store': store_id}
-    response = requests.request("POST", url, headers=headers, data=payload)
-    response.raise_for_status()
-    return response.json()['access_token']
+from time import time
 
 
 def get_all_products(token, store_id):
@@ -165,7 +153,9 @@ def update_elastic_token(client_id, client_secret, store_id, token_path):
     response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
     token = response.json()['access_token']
-    os.environ["ELASTIC_TOKEN"] = token
+    token_lifetime = response.json()['expires']
+    os.environ["ELASTIC_TOKEN"] = str(token)
+    os.environ["ELASTIC_TOKEN_LIFETIME"] = str(token_lifetime)
     '''
     with open(token_path, "w") as elasticpath_token:
         elasticpath_token.write(token)
@@ -179,7 +169,9 @@ def get_elasticpath_token(token_path):
     return token
 
 
-try:
-    get_all_products(os.getenv('ELASTIC_TOKEN'), '8165a9a1-dca1-4df3-b733-e223ba60ff75')
-except requests.exceptions.HTTPError:
-    print('Exception', os.getenv('ELASTIC_TOKEN'))
+def is_expired():
+    try:
+        token_lifetime = float(os.getenv("ELASTIC_TOKEN_LIFETIME")) - time()
+        return token_lifetime < 5
+    except TypeError:
+        return True
