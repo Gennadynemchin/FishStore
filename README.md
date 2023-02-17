@@ -8,7 +8,7 @@
 git clone git@github.com:Gennadynemchin/FishStore.git
 ```
 
-Use .env.example as a draft and fill all of the requested
+Use .env.example as a draft and fill out all of the requested
 variables:
 
 ```
@@ -18,8 +18,8 @@ STORE_ID=<ELASTICPATH_STORE_ID>
 TG_TOKEN=<TELEGRAM_BOT_TOKEN>
 ```
 
-Use elasticpath_token.example as a draft and remain it empty. The token will be stored here
-automatically. Don't forget to rename it to elasticpath_token
+Your elastic token will be stored in the environment variable `ELASTIC_TOKEN`
+and expiration time - in the `ELASTIC_TOKEN_LIFETIME`
 
 - Get your Telegram bot token from https://t.me/BotFather
 - Please visit https://elasticpath.com and create a free trial store or a regular store.
