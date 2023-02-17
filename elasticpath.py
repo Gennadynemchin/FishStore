@@ -129,20 +129,7 @@ def create_customer(name, email, password, store_id, token):
     return response.status_code == 201
 
 
-def is_token_expired(token_path, store_id):
-    with open(token_path, "r") as elasticpath_token:
-        token = elasticpath_token.read()
-    url = 'https://useast.api.elasticpath.com/pcm/products'
-    headers = {'accept': 'application/json',
-               'content-type': 'application/json',
-               'x-moltin-auth-store': store_id,
-               'Authorization': f'Bearer {token}'}
-    response = requests.request("GET", url, headers=headers)
-    print(response.status_code)
-    return response.status_code != 200
-
-
-def update_elastic_token(client_id, client_secret, store_id, token_path):
+def update_elastic_token(client_id, client_secret, store_id):
     url = 'https://useast.api.elasticpath.com/oauth/access_token'
     payload = {'client_id': client_id,
                'client_secret': client_secret,
@@ -156,17 +143,7 @@ def update_elastic_token(client_id, client_secret, store_id, token_path):
     token_lifetime = response.json()['expires']
     os.environ["ELASTIC_TOKEN"] = str(token)
     os.environ["ELASTIC_TOKEN_LIFETIME"] = str(token_lifetime)
-    '''
-    with open(token_path, "w") as elasticpath_token:
-        elasticpath_token.write(token)
-    '''
     return os.getenv('ELASTIC_TOKEN')
-
-
-def get_elasticpath_token(token_path):
-    with open(token_path, "r") as elasticpath_token:
-        token = elasticpath_token.read()
-    return token
 
 
 def is_expired():

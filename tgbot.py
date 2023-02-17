@@ -13,8 +13,6 @@ from elasticpath import (get_all_products,
                          update_elastic_token,
                          get_product_info_by_id,
                          get_photo_by_productid,
-                         get_elasticpath_token,
-                         is_token_expired,
                          add_product_to_cart,
                          get_cart_items,
                          remove_all_from_cart,
@@ -33,13 +31,9 @@ class State(Enum):
     WAITING_EMAIL = auto()
 
 
-def handle_menu(bot, update, token_path, store_id, client_id, client_secret):
-    '''if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)'''
+def handle_menu(bot, update, store_id, client_id, client_secret):
     if is_expired():
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-
-    # elastic_token = get_elasticpath_token(token_path)
+        update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     products = get_all_products(elastic_token, store_id)
     keyboard = []
@@ -52,17 +46,17 @@ def handle_menu(bot, update, token_path, store_id, client_id, client_secret):
     return State.HANDLE_DESCRIPTION
 
 
-def handle_description(bot, update, token_path, store_id, client_id, client_secret):
-    if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-    elasticpath_token = get_elasticpath_token(token_path)
+def handle_description(bot, update, store_id, client_id, client_secret):
+    if is_expired():
+        update_elastic_token(client_id, client_secret, store_id)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
     product_id = update.callback_query.data
-    product_info = get_product_info_by_id(elasticpath_token, product_id, store_id)
+    product_info = get_product_info_by_id(elastic_token, product_id, store_id)
     product_name = product_info['product_name']
     product_description = product_info['product_description']
     product_price = product_info['product_price']
     product_sku = product_info['product_sku']
-    photo_link = get_photo_by_productid(elasticpath_token, product_id, store_id)
+    photo_link = get_photo_by_productid(elastic_token, product_id, store_id)
     keyboard = [[InlineKeyboardButton('Buy 1kg', callback_data=f'add_to_cart {product_id} 1'),
                  InlineKeyboardButton('Buy 3kg', callback_data=f'add_to_cart {product_id} 3'),
                  InlineKeyboardButton('Buy 10kg', callback_data=f'add_to_cart {product_id} 10')],
@@ -79,30 +73,30 @@ def handle_description(bot, update, token_path, store_id, client_id, client_secr
     return State.HANDLE_DESCRIPTION
 
 
-def add_to_cart(bot, update, token_path, store_id, client_id, client_secret):
-    if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-    elasticpath_token = get_elasticpath_token(token_path)
+def add_to_cart(bot, update, store_id, client_id, client_secret):
+    if is_expired():
+        update_elastic_token(client_id, client_secret, store_id)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
     cart_id = update.effective_user.id
     product_id = update.callback_query.data.split(' ')[1]
     quantity = int(update.callback_query.data.split(' ')[2])
-    add_product_to_cart(elasticpath_token, cart_id, store_id, product_id, quantity)
+    add_product_to_cart(elastic_token, cart_id, store_id, product_id, quantity)
     update.callback_query.answer(text='The product has been added to cart', show_alert=False)
     return State.HANDLE_DESCRIPTION
 
 
-def handle_cart_info(bot, update, token_path, store_id, client_id, client_secret):
+def handle_cart_info(bot, update, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-    elasticpath_token = get_elasticpath_token(token_path)
+    if is_expired():
+        update_elastic_token(client_id, client_secret, store_id)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
     if update.callback_query:
         try:
             product = update.callback_query.data.split(' ')[1]
-            delete_product_from_cart(elasticpath_token, cart_id, store_id, product)
+            delete_product_from_cart(elastic_token, cart_id, store_id, product)
         except IndexError:
             pass
-    cart_info, total_price = get_cart_items(elasticpath_token, cart_id, store_id)
+    cart_info, total_price = get_cart_items(elastic_token, cart_id, store_id)
     products_in_cart_info = []
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu'),
                  InlineKeyboardButton('Remove all', callback_data='remove_all')],
@@ -124,12 +118,12 @@ def handle_cart_info(bot, update, token_path, store_id, client_id, client_secret
     return State.HANDLE_CART
 
 
-def handle_remove_all_from_cart(bot, update, token_path, store_id, client_id, client_secret):
+def handle_remove_all_from_cart(bot, update, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-    elasticpath_token = get_elasticpath_token(token_path)
-    remove_all_from_cart(elasticpath_token, cart_id, store_id)
+    if is_expired():
+        update_elastic_token(client_id, client_secret, store_id)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
+    remove_all_from_cart(elastic_token, cart_id, store_id)
     keyboard = [[InlineKeyboardButton('Menu', callback_data='menu')]]
     update.callback_query.answer(text='The product has been added to cart', show_alert=False)
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -151,14 +145,14 @@ def checkout(bot, update):
     return State.WAITING_EMAIL
 
 
-def get_email(bot, update, token_path, store_id, client_id, client_secret):
+def get_email(bot, update, store_id, client_id, client_secret):
     user_name = update.effective_message.from_user.first_name
     user_email = update.effective_message.text
     user_password = update.effective_message.from_user.id
-    if is_token_expired(token_path, store_id):
-        update_elastic_token(client_id, client_secret, store_id, token_path)
-    elasticpath_token = get_elasticpath_token(token_path)
-    customer = create_customer(user_name, user_email, user_password, store_id, elasticpath_token)
+    if is_expired():
+        update_elastic_token(client_id, client_secret, store_id)
+    elastic_token = os.getenv('ELASTIC_TOKEN')
+    customer = create_customer(user_name, user_email, user_password, store_id, elastic_token)
     if customer:
         keyboard = [[InlineKeyboardButton(text="Back to menu", callback_data="menu")]]
         update.message.reply_text(text=f'Your email {user_email}. We contact you shortly',
@@ -176,66 +170,55 @@ def main():
     client_id = os.getenv('CLIENT_ID')
     client_secret = os.getenv('CLIENT_SECRET')
     store_id = os.getenv('STORE_ID')
-    token_path = 'elasticpath_token'
 
     updater = Updater(tg_token)
     dp = updater.dispatcher
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', partial(handle_menu,
-                                                      token_path=token_path,
                                                       store_id=store_id,
                                                       client_id=client_id,
                                                       client_secret=client_secret))],
         states={State.HANDLE_MENU: [CallbackQueryHandler(partial(handle_menu,
-                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret
                                                                  ),
                                                          pattern='remove_all'),
                                     CallbackQueryHandler(partial(handle_menu,
-                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret
                                                                  ))],
                 State.HANDLE_DESCRIPTION: [CallbackQueryHandler(partial(add_to_cart,
-                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='^add_to_cart'),
                                            CallbackQueryHandler(partial(handle_cart_info,
-                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='cart_info'),
                                            CallbackQueryHandler(partial(handle_menu,
-                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret),
                                                                 pattern='back'),
                                            CallbackQueryHandler(partial(handle_description,
-                                                                        token_path=token_path,
                                                                         store_id=store_id,
                                                                         client_id=client_id,
                                                                         client_secret=client_secret))],
                 State.HANDLE_CART: [CallbackQueryHandler(partial(handle_menu,
-                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='menu'),
                                     CallbackQueryHandler(partial(handle_remove_all_from_cart,
-                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
                                                          pattern='remove_all'),
                                     CallbackQueryHandler(partial(handle_cart_info,
-                                                                 token_path=token_path,
                                                                  store_id=store_id,
                                                                  client_id=client_id,
                                                                  client_secret=client_secret),
@@ -243,23 +226,19 @@ def main():
                                     CallbackQueryHandler(checkout, pattern='checkout')
                                     ],
                 State.WAITING_EMAIL: [MessageHandler(Filters.text, partial(get_email,
-                                                                           token_path=token_path,
                                                                            store_id=store_id,
                                                                            client_id=client_id,
                                                                            client_secret=client_secret)),
                                       CallbackQueryHandler(partial(handle_cart_info,
-                                                                   token_path=token_path,
                                                                    store_id=store_id,
                                                                    client_id=client_id,
                                                                    client_secret=client_secret),
                                                            pattern='cart_info'),
                                       CallbackQueryHandler(partial(handle_menu,
-                                                                   token_path=token_path,
                                                                    store_id=store_id,
                                                                    client_id=client_id,
                                                                    client_secret=client_secret))]},
         fallbacks=[CommandHandler('start', partial(handle_menu,
-                                                   token_path=token_path,
                                                    store_id=store_id,
                                                    client_id=client_id,
                                                    client_secret=client_secret))])
