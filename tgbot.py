@@ -18,7 +18,7 @@ from elasticpath import (get_all_products,
                          remove_all_from_cart,
                          delete_product_from_cart,
                          create_customer,
-                         is_expired)
+                         check_elastic_token)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class State(Enum):
 
 
 def handle_menu(bot, update, store_id, client_id, client_secret):
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     products = get_all_products(elastic_token, store_id)
@@ -47,7 +47,7 @@ def handle_menu(bot, update, store_id, client_id, client_secret):
 
 
 def handle_description(bot, update, store_id, client_id, client_secret):
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     product_id = update.callback_query.data
@@ -74,7 +74,7 @@ def handle_description(bot, update, store_id, client_id, client_secret):
 
 
 def add_to_cart(bot, update, store_id, client_id, client_secret):
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     cart_id = update.effective_user.id
@@ -87,7 +87,7 @@ def add_to_cart(bot, update, store_id, client_id, client_secret):
 
 def handle_cart_info(bot, update, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     if update.callback_query:
@@ -120,7 +120,7 @@ def handle_cart_info(bot, update, store_id, client_id, client_secret):
 
 def handle_remove_all_from_cart(bot, update, store_id, client_id, client_secret):
     cart_id = update.effective_user.id
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     remove_all_from_cart(elastic_token, cart_id, store_id)
@@ -149,7 +149,7 @@ def get_email(bot, update, store_id, client_id, client_secret):
     user_name = update.effective_message.from_user.first_name
     user_email = update.effective_message.text
     user_password = update.effective_message.from_user.id
-    if is_expired():
+    if check_elastic_token():
         update_elastic_token(client_id, client_secret, store_id)
     elastic_token = os.getenv('ELASTIC_TOKEN')
     customer = create_customer(user_name, user_email, user_password, store_id, elastic_token)

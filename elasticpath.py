@@ -24,14 +24,15 @@ def get_cart_items(token, cart_id, store_id):
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
     response.raise_for_status()
+    decoded_response = response.json()
     products = []
-    for product in response.json()['data']:
+    for product in decoded_response['data']:
         products.append({'id': product['id'],
                          'name': product['name'],
                          'qty': product['quantity'],
                          'price': product['meta']['display_price']['with_tax']['unit']['formatted'],
                          'subtotal': product['meta']['display_price']['with_tax']['value']['formatted']})
-    total_price = response.json()['meta']['display_price']['with_tax']['formatted']
+    total_price = decoded_response['meta']['display_price']['with_tax']['formatted']
     return products, total_price
 
 
@@ -83,12 +84,14 @@ def get_product_info_by_id(token, product_id, store_id):
                'Authorization': f'Bearer {token}'}
     response_info = requests.request("GET", url_info, headers=headers, data=payload)
     response_info.raise_for_status()
+    decoded_response_info = response_info.json()
     response_description = requests.request("GET", url_description, headers=headers, data=payload)
     response_description.raise_for_status()
-    response = {'product_name': response_info.json()['data']['attributes']['name'],
-                'product_price': response_info.json()['data']['meta']['display_price']['with_tax']['formatted'],
-                'product_sku': response_info.json()['data']['attributes']['sku'],
-                'product_description': response_description.json()['data']['attributes']['description']}
+    decoded_response_description = response_description.json()
+    response = {'product_name': decoded_response_info['data']['attributes']['name'],
+                'product_price': decoded_response_info['data']['meta']['display_price']['with_tax']['formatted'],
+                'product_sku': decoded_response_info['data']['attributes']['sku'],
+                'product_description': decoded_response_description['data']['attributes']['description']}
     return response
 
 
@@ -139,16 +142,17 @@ def update_elastic_token(client_id, client_secret, store_id):
                'x-moltin-auth-store': store_id}
     response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
-    token = response.json()['access_token']
-    token_lifetime = response.json()['expires']
+    decoded_response = response.json()
+    token = decoded_response['access_token']
+    token_lifetime = decoded_response['expires']
     os.environ["ELASTIC_TOKEN"] = str(token)
     os.environ["ELASTIC_TOKEN_LIFETIME"] = str(token_lifetime)
     return os.getenv('ELASTIC_TOKEN')
 
 
-def is_expired():
-    try:
+def check_elastic_token():
+    if os.getenv("ELASTIC_TOKEN_LIFETIME") is not None:
         token_lifetime = float(os.getenv("ELASTIC_TOKEN_LIFETIME")) - time()
         return token_lifetime < 5
-    except TypeError:
+    else:
         return True
