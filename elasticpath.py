@@ -24,15 +24,15 @@ def get_cart_items(token, cart_id, store_id):
                'Authorization': f'Bearer {token}'}
     response = requests.request("GET", url, headers=headers, data=payload)
     response.raise_for_status()
-    decoded_response = response.json()
+    products_in_cart = response.json()
     products = []
-    for product in decoded_response['data']:
+    for product in products_in_cart['data']:
         products.append({'id': product['id'],
                          'name': product['name'],
                          'qty': product['quantity'],
                          'price': product['meta']['display_price']['with_tax']['unit']['formatted'],
                          'subtotal': product['meta']['display_price']['with_tax']['value']['formatted']})
-    total_price = decoded_response['meta']['display_price']['with_tax']['formatted']
+    total_price = products_in_cart['meta']['display_price']['with_tax']['formatted']
     return products, total_price
 
 
@@ -84,14 +84,14 @@ def get_product_info_by_id(token, product_id, store_id):
                'Authorization': f'Bearer {token}'}
     response_info = requests.request("GET", url_info, headers=headers, data=payload)
     response_info.raise_for_status()
-    decoded_response_info = response_info.json()
+    product_info = response_info.json()
     response_description = requests.request("GET", url_description, headers=headers, data=payload)
     response_description.raise_for_status()
-    decoded_response_description = response_description.json()
-    response = {'product_name': decoded_response_info['data']['attributes']['name'],
-                'product_price': decoded_response_info['data']['meta']['display_price']['with_tax']['formatted'],
-                'product_sku': decoded_response_info['data']['attributes']['sku'],
-                'product_description': decoded_response_description['data']['attributes']['description']}
+    product_description = response_description.json()
+    response = {'product_name': product_info['data']['attributes']['name'],
+                'product_price': product_info['data']['meta']['display_price']['with_tax']['formatted'],
+                'product_sku': product_info['data']['attributes']['sku'],
+                'product_description': product_description['data']['attributes']['description']}
     return response
 
 
