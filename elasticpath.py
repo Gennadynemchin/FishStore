@@ -142,9 +142,9 @@ def update_elastic_token(client_id, client_secret, store_id):
                'x-moltin-auth-store': store_id}
     response = requests.request("POST", url, headers=headers, data=payload)
     response.raise_for_status()
-    decoded_response = response.json()
-    token = decoded_response['access_token']
-    token_lifetime = decoded_response['expires']
+    response_token = response.json()
+    token = response_token['access_token']
+    token_lifetime = response_token['expires']
     os.environ["ELASTIC_TOKEN"] = str(token)
     os.environ["ELASTIC_TOKEN_LIFETIME"] = str(token_lifetime)
     return os.getenv('ELASTIC_TOKEN')
